@@ -46,24 +46,14 @@ def _match_icon(pattern: str, catalog: list[tuple[str, str]]) -> str | None:
     """Match an icon regex against the catalog and return the media path.
 
     The *pattern* is treated as a regex and matched (case-insensitively)
-    against the icon basename (without file extension).  The first match wins.
+    against the icon name.  The first match wins.
     """
     regex = re.compile(pattern, re.IGNORECASE)
 
     for pack_id, icon_name in catalog:
-        # icon_name may be a bare name ("textsms"), a filename ("textsms.png"),
-        # or a path ("icons/textsms.png").  Normalise to the bare name.
-        basename = icon_name.rsplit("/", 1)[-1]
-        name_no_ext = basename.rsplit(".", 1)[0] if "." in basename else basename
-
-        if regex.search(name_no_ext):
+        if regex.search(icon_name):
             # Build the full media path expected by StreamController.
-            # If the API already returned a full path, use it as-is.
-            if icon_name.startswith("data/"):
-                return icon_name
-            # Otherwise construct: data/icons/<pack_id>/icons/<icon_file>
-            icon_file = basename if "." in basename else f"{basename}.png"
-            return f"data/icons/{pack_id}/icons/{icon_file}"
+            return f"data/icons/{pack_id}/icons/{icon_name}.png"
 
     return None
 
