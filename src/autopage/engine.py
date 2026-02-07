@@ -29,12 +29,16 @@ def _build_icon_catalog(client=None) -> list[tuple[str, str]]:
         client = StreamControllerClient()
 
     catalog: list[tuple[str, str]] = []
-    for pack_id in client.get_icon_packs():
-        log.debug("Fetching icons for pack %r", pack_id)
-        for icon_name in client.get_icon_names(pack_id):
-            catalog.append((pack_id, icon_name))
-    log.info("Icon catalog: %d icon(s) across %d pack(s)",
-             len(catalog), len(set(p for p, _ in catalog)))
+    try:
+        for pack_id in client.get_icon_packs():
+            log.debug("Fetching icons for pack %r", pack_id)
+            for icon_name in client.get_icon_names(pack_id):
+                catalog.append((pack_id, icon_name))
+        log.info("Icon catalog: %d icon(s) across %d pack(s)",
+                len(catalog), len(set(p for p, _ in catalog)))
+    except Exception as exc:
+        log.warning("Could not fetch icon catalog from StreamController: %s", exc)
+
     return catalog
 
 
@@ -72,19 +76,13 @@ def _resolve_icons(definition: AutopageDef, *, client=None) -> None:
                     in-place.
         client: An optional ``StreamControllerClient`` instance (for testing).
 
-    Buttons whose icon cannot be resolved keep their original value and a
-    warning is logged.  If the API is unreachable the step is skipped
-    gracefully.
+    Buttons whose icon cannot be resolved will have the icon dropped.  
     """
     buttons_with_icons = [b for b in definition.buttons if b.icon]
     if not buttons_with_icons:
         return
 
-    try:
-        catalog = _build_icon_catalog(client)
-    except Exception as exc:
-        log.warning("Could not fetch icon catalog from StreamController: %s", exc)
-        return
+    catalog = _build_icon_catalog(client)
 
     for button in buttons_with_icons:
         resolved = _match_icon(button.icon, catalog)
@@ -92,7 +90,8 @@ def _resolve_icons(definition: AutopageDef, *, client=None) -> None:
             log.info("Resolved icon %r → %s", button.icon, resolved)
             button.icon = resolved
         else:
-            log.warning("No icon matched pattern %r", button.icon)
+            log.warning("No icon matched pattern %r, dropping...", button.icon)
+            button.icon = None
 
 
 # ── Public API ───────────────────────────────────────────────────────
