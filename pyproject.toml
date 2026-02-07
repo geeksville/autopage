@@ -1,0 +1,54 @@
+[project]
+name = "autopage"
+version = "0.1.0"
+description = "Automatic StreamController page definitions from TOML configs"
+readme = "README.md"
+license = "GPL-3.0-only"
+authors = [
+    { name = "Kevin Hester", email = "kevinh@geeksville.com" }
+]
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+keywords = ["streamdeck", "streamcontroller", "automation", "toml"]
+
+dependencies = [
+    "toml-repo>=0.1.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/geeksville/autopage"
+Repository = "https://github.com/geeksville/autopage"
+
+[project.scripts]
+autopage = "autopage.cli:main"
+
+[build-system]
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+packages = [{ include = "autopage", from = "src" }]
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.0"
+pytest-cov = ">=4.0"
+ruff = ">=0.4"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
