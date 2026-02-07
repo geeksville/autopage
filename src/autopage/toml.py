@@ -48,6 +48,7 @@ class AutopageDef:
     """A complete autopage definition parsed from an ap.toml file."""
 
     matches: list[MatchRule] = field(default_factory=list)
+    defaults: dict = field(default_factory=dict)
     buttons: list[Button] = field(default_factory=list)
     source_path: str | None = None
 
@@ -85,16 +86,23 @@ def parse_toml_dict(doc: dict) -> AutopageDef:
             )
         )
 
-    # Parse [[button]] tables
+    # Parse [default] table
+    defaults = dict(doc.get("default", {}))
+    result.defaults = defaults
+
+    # Parse [[button]] tables, applying defaults for missing fields
+    button_fields = {f.name for f in Button.__dataclass_fields__.values()} - {"actions"}
     for b in doc.get("button", []):
+        merged = {k: v for k, v in defaults.items() if k in button_fields}
+        merged.update({k: v for k, v in b.items() if k != "action"})
         button = Button(
-            location=b.get("location"),
-            icon=b.get("icon"),
-            top=b.get("top"),
-            center=b.get("center"),
-            bottom=b.get("bottom"),
-            background=b.get("background"),
-            size=b.get("size"),
+            location=merged.get("location"),
+            icon=merged.get("icon"),
+            top=merged.get("top"),
+            center=merged.get("center"),
+            bottom=merged.get("bottom"),
+            background=merged.get("background"),
+            size=merged.get("size"),
         )
         # Each button may have an [[button.action]] array
         for a in b.get("action", []):

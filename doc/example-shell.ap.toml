@@ -37,7 +37,7 @@ background = "0xff2244aa"
 # A background color for the button, in RGBA format (optional)
 
 # size = 0.84
-# An optional size hint for the icon, where 1.0 is the default size and
+# An optional size hint for the icon, where 1.0 is the default size
 
 [[button.action]]
 # Each button can contain an array of actions
@@ -50,7 +50,7 @@ type = "Ctrl+C"
 # If you want to type an actual space, use "SPACE" as shown above.
 
 # id = "com_core447_OSPlugin::Hotkey"
-# For more advanced actions you can specify the plugin ID and action name
+# For more advanced actions you can specify the plugin ID and action name (FIXME - not yet implemented)
 
 # settings = { "keys" = [[ 30, 1 ], [ 30, 0 ]] }
 # If using the 'id' mechanism you can pass in settings to that plugin via the settings table
