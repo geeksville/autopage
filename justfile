@@ -1,0 +1,50 @@
+# Justfile for autopage - https://github.com/casey/just
+
+# List available recipes
+default:
+    @just --list
+
+# Run all tests
+test:
+    poetry run pytest tests/ -v
+
+# Run tests with coverage
+test-cov:
+    poetry run pytest tests/ -v --cov=autopage --cov-report=term-missing
+
+# Run linter
+lint:
+    poetry run ruff check src/ tests/
+
+# Auto-fix linting issues
+lint-fix:
+    poetry run ruff check --fix src/ tests/
+
+# Format code
+fmt:
+    poetry run ruff format src/ tests/
+
+# Build the package
+build:
+    poetry build
+
+# Install dependencies
+install:
+    poetry install
+
+# Update dependencies
+update:
+    poetry update
+
+# Run autopage with example file (dry-run)
+example:
+    poetry run autopage --dry-run doc/example-shell.ap.toml
+
+# Clean build artifacts
+clean:
+    rm -rf dist/ build/ *.egg-info
+    find . -type d -name __pycache__ -exec rm -rf {} +
+    find . -type f -name '*.pyc' -delete
+
+# Run all checks (lint + test)
+check: lint test

@@ -1,7 +1,18 @@
-"""Basic tests for autopage."""
+"""Tests for autopage."""
+
+import json
 
 from autopage import __version__
 from autopage.cli import main
+from autopage.json import (
+    _parse_rgba_hex,
+    generate_page_json,
+    page_json_to_string,
+    type_string_to_keys,
+)
+from autopage.toml import parse_toml_string
+
+# ── Version / CLI ────────────────────────────────────────────────────
 
 
 def test_version():
@@ -25,3 +36,171 @@ def test_cli_version(capsys):
         assert exc.code == 0
     captured = capsys.readouterr()
     assert "0.1.0" in captured.out
+
+
+def test_cli_dry_run(capsys, tmp_path):
+    """CLI --dry-run parses a toml file and prints JSON."""
+    toml_file = tmp_path / "test.ap.toml"
+    toml_file.write_text(
+        '[[button]]\ncenter = "hi"\n[[button.action]]\ntype = "Ctrl+C"\n'
+    )
+    rc = main(["--dry-run", str(toml_file)])
+    assert rc == 0
+    captured = capsys.readouterr()
+    page = json.loads(captured.out)
+    assert "keys" in page
+
+
+# ── TOML parsing ─────────────────────────────────────────────────────
+
+
+EXAMPLE_TOML = """\
+[[match]]
+class = "code"
+
+[[button]]
+location = "1x2"
+icon = "next"
+top = "foo"
+center = "blah"
+bottom = "bar"
+background = "0xff2244aa"
+
+[[button.action]]
+type = "Ctrl+C"
+
+[[button]]
+icon = "home"
+center = "hello"
+
+[[button.action]]
+type = "Hello SPACE world"
+"""
+
+
+def test_parse_matches():
+    defn = parse_toml_string(EXAMPLE_TOML)
+    assert len(defn.matches) == 1
+    assert defn.matches[0].class_pattern == "code"
+    assert defn.matches[0].name_pattern is None
+
+
+def test_parse_buttons():
+    defn = parse_toml_string(EXAMPLE_TOML)
+    assert len(defn.buttons) == 2
+
+    b0 = defn.buttons[0]
+    assert b0.location == "1x2"
+    assert b0.icon == "next"
+    assert b0.top == "foo"
+    assert b0.center == "blah"
+    assert b0.bottom == "bar"
+    assert b0.background == "0xff2244aa"
+    assert len(b0.actions) == 1
+    assert b0.actions[0].type == "Ctrl+C"
+
+    b1 = defn.buttons[1]
+    assert b1.location is None
+    assert b1.icon == "home"
+    assert b1.center == "hello"
+    assert len(b1.actions) == 1
+    assert b1.actions[0].type == "Hello SPACE world"
+
+
+def test_parse_advanced_action():
+    toml_text = """\
+[[button]]
+[[button.action]]
+id = "com_core447_OSPlugin::Hotkey"
+settings = { "keys" = [[ 30, 1 ], [ 30, 0 ]] }
+"""
+    defn = parse_toml_string(toml_text)
+    action = defn.buttons[0].actions[0]
+    assert action.id == "com_core447_OSPlugin::Hotkey"
+    assert action.settings == {"keys": [[30, 1], [30, 0]]}
+
+
+# ── Key-code generation ─────────────────────────────────────────────
+
+
+def test_type_ctrl_c():
+    keys = type_string_to_keys("Ctrl+C")
+    # Ctrl press, C press, C release, Ctrl release
+    assert keys == [[29, 1], [46, 1], [46, 0], [29, 0]]
+
+
+def test_type_ctrl_shift_t():
+    keys = type_string_to_keys("Ctrl+Shift+T")
+    # Ctrl press, Shift press, T press, T release, Shift release, Ctrl release
+    assert keys == [[29, 1], [42, 1], [20, 1], [20, 0], [42, 0], [29, 0]]
+
+
+def test_type_hello_space_world():
+    keys = type_string_to_keys("Hello SPACE world")
+    # H (shifted), e, l, l, o, space, w, o, r, l, d
+    assert keys[0:4] == [[42, 1], [35, 1], [35, 0], [42, 0]]  # H
+    assert keys[4:6] == [[18, 1], [18, 0]]  # e
+    # ... space somewhere in the middle
+    space_idx = None
+    for i, k in enumerate(keys):
+        if k == [57, 1]:
+            space_idx = i
+            break
+    assert space_idx is not None
+    assert keys[space_idx + 1] == [57, 0]
+
+
+def test_type_literal_abc():
+    keys = type_string_to_keys("abc")
+    assert keys == [
+        [30, 1], [30, 0],  # a
+        [48, 1], [48, 0],  # b
+        [46, 1], [46, 0],  # c
+    ]
+
+
+# ── Color parsing ───────────────────────────────────────────────────
+
+
+def test_parse_rgba_hex():
+    assert _parse_rgba_hex("0xff2244aa") == [255, 34, 68, 170]
+
+
+def test_parse_rgba_hash():
+    assert _parse_rgba_hex("#00ff00ff") == [0, 255, 0, 255]
+
+
+# ── JSON generation ─────────────────────────────────────────────────
+
+
+def test_generate_page_json_structure():
+    defn = parse_toml_string(EXAMPLE_TOML)
+    page = generate_page_json(defn)
+
+    assert "settings" in page
+    assert "keys" in page
+    assert page["settings"]["auto-change"]["enable"] is True
+
+    # Button 0 has explicit location "1x2"
+    assert "1x2" in page["keys"]
+    key_1x2 = page["keys"]["1x2"]["states"]["0"]
+    assert key_1x2["labels"]["top"]["text"] == "foo"
+    assert key_1x2["labels"]["center"]["text"] == "blah"
+    assert key_1x2["labels"]["bottom"]["text"] == "bar"
+    assert key_1x2["background"]["color"] == [255, 34, 68, 170]
+    assert key_1x2["media"]["path"] == "next"
+    assert len(key_1x2["actions"]) == 1
+    assert key_1x2["actions"][0]["id"] == "com_core447_OSPlugin::Hotkey"
+
+    # Button 1 has no location → auto-placed at 0x0
+    assert "0x0" in page["keys"]
+    key_0x0 = page["keys"]["0x0"]["states"]["0"]
+    assert key_0x0["labels"]["center"]["text"] == "hello"
+
+
+def test_page_json_roundtrip():
+    defn = parse_toml_string(EXAMPLE_TOML)
+    page = generate_page_json(defn)
+    text = page_json_to_string(page)
+    reloaded = json.loads(text)
+    assert reloaded == page

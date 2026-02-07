@@ -21,6 +21,7 @@ keywords = ["streamdeck", "streamcontroller", "automation", "toml"]
 
 dependencies = [
     "toml-repo>=0.1.2",
+    "tomlkit>=0.13",
 ]
 
 [project.urls]
