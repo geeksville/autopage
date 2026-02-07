@@ -1,16 +1,18 @@
 """Tests for autopage."""
 
 import json
+from unittest.mock import MagicMock
 
 from autopage import __version__
 from autopage.cli import main
+from autopage.engine import _match_icon, _resolve_icons
 from autopage.json import (
     _parse_rgba_hex,
     generate_page_json,
     page_json_to_string,
     type_string_to_keys,
 )
-from autopage.toml import parse_toml_string
+from autopage.toml import AutopageDef, Button, parse_toml_string
 
 # ── Version / CLI ────────────────────────────────────────────────────
 
@@ -212,3 +214,87 @@ def test_page_json_roundtrip():
     text = page_json_to_string(page)
     reloaded = json.loads(text)
     assert reloaded == page
+
+
+# ── Icon resolution ──────────────────────────────────────────────────
+
+
+def test_match_icon_exact():
+    """Exact icon name matches."""
+    catalog = [
+        ("com_core447_MaterialIcons", "textsms.png"),
+        ("com_core447_MaterialIcons", "home.png"),
+    ]
+    result = _match_icon("home", catalog)
+    assert result == "data/icons/com_core447_MaterialIcons/icons/home.png"
+
+
+def test_match_icon_regex():
+    """A regex pattern matches icon names."""
+    catalog = [
+        ("pack_a", "arrow_back.png"),
+        ("pack_a", "arrow_forward.png"),
+        ("pack_b", "next.png"),
+    ]
+    # Match anything containing "next" or "forward"
+    result = _match_icon("next|forward", catalog)
+    assert result == "data/icons/pack_a/icons/arrow_forward.png"
+
+
+def test_match_icon_case_insensitive():
+    """Icon matching is case-insensitive."""
+    catalog = [("pack_a", "Home.png")]
+    result = _match_icon("home", catalog)
+    assert result == "data/icons/pack_a/icons/Home.png"
+
+
+def test_match_icon_no_match():
+    """Returns None when no icon matches."""
+    catalog = [("pack_a", "textsms.png")]
+    result = _match_icon("nonexistent", catalog)
+    assert result is None
+
+
+def test_match_icon_bare_name():
+    """Handles icon names without file extensions."""
+    catalog = [("pack_a", "home")]
+    result = _match_icon("home", catalog)
+    assert result == "data/icons/pack_a/icons/home.png"
+
+
+def test_match_icon_full_path_passthrough():
+    """Icons already containing a full data/ path are returned as-is."""
+    catalog = [("pack_a", "data/icons/pack_a/icons/home.png")]
+    result = _match_icon("home", catalog)
+    assert result == "data/icons/pack_a/icons/home.png"
+
+
+def test_resolve_icons_updates_buttons():
+    """_resolve_icons replaces icon patterns with resolved paths."""
+    defn = AutopageDef(buttons=[
+        Button(icon="home"),
+        Button(icon="textsms"),
+        Button(center="no icon"),
+    ])
+
+    mock_client = MagicMock()
+    mock_client.get_icon_packs.return_value = ["com_core447_MaterialIcons"]
+    mock_client.get_icon_names.return_value = ["home.png", "textsms.png", "star.png"]
+
+    _resolve_icons(defn, client=mock_client)
+
+    assert defn.buttons[0].icon == "data/icons/com_core447_MaterialIcons/icons/home.png"
+    assert defn.buttons[1].icon == "data/icons/com_core447_MaterialIcons/icons/textsms.png"
+    assert defn.buttons[2].icon is None  # no icon, unchanged
+
+
+def test_resolve_icons_api_failure_is_graceful():
+    """If the StreamController API is unavailable, icons are left unresolved."""
+    defn = AutopageDef(buttons=[Button(icon="home")])
+
+    mock_client = MagicMock()
+    mock_client.get_icon_packs.side_effect = Exception("no dbus")
+
+    _resolve_icons(defn, client=mock_client)
+
+    assert defn.buttons[0].icon == "home"  # unchanged

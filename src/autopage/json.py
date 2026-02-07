@@ -198,9 +198,9 @@ def _button_to_json(button: Button) -> dict[str, Any]:
     """Convert a Button to a StreamController JSON key entry."""
     state: dict[str, Any] = {
         "actions": [_action_to_json(a) for a in button.actions],
-        "image-control-action": 0,
-        "label-control-actions": [0, 0, 0],
-        "background-control-action": 0,
+        # "image-control-action": 0,
+        # "label-control-actions": [0, 0, 0],
+        # "background-control-action": 0,
     }
 
     # Labels

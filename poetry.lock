@@ -292,6 +292,18 @@ files = [
 toml = ["tomli ; python_full_version <= \"3.11.0a6\""]
 
 [[package]]
+name = "dasbus"
+version = "1.7"
+description = "DBus library in Python 3"
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "dasbus-1.7-py3-none-any.whl", hash = "sha256:0a9433e9e72c2c865fa2d5ef824ac4ef49b540cf57f6396e515c2f314e5c14cd"},
+    {file = "dasbus-1.7.tar.gz", hash = "sha256:a8850d841adfe8ee5f7bb9f82cf449ab9b4950dc0633897071718e0d0036b6f6"},
+]
+
+[[package]]
 name = "idna"
 version = "3.11"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -734,4 +746,4 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "594b073b4743c7288fbadfcf5509c553a197b81eaea60a79ac25f24c4bd68b24"
+content-hash = "6393f421690873beee29fec586ac09f9c0797c5efc7da7c20524ed315e714339"
