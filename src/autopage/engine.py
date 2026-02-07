@@ -51,7 +51,7 @@ def _match_icon(pattern: str, catalog: list[tuple[str, str]]) -> str | None:
     regex = re.compile(pattern, re.IGNORECASE)
 
     for pack_id, icon_name in catalog:
-        if regex.search(icon_name):
+        if regex.fullmatch(icon_name):
             # Build the full media path expected by StreamController.
             return f"data/icons/{pack_id}/icons/{icon_name}.png"
 

@@ -32,6 +32,7 @@ Repository = "https://github.com/geeksville/autopage"
 
 [project.scripts]
 autopage = "autopage.cli:main"
+streamcontroller_client = "autopage.api_client:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0"]

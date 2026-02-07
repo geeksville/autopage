@@ -11,13 +11,17 @@ class = "code" # A regex that is matched against the window class (WM_CLASS)
 # Defines an (optional) background for the page
 # FIXME figure out how to pass in backgrounds in the page JSON
 
+[default]
+# Defaults values for buttons that don't specify them explicitly
+background = "0x00ff0080" # Greenish
+
 [[button]]
 
 location = "1x2" 
 # A grid location for the button, in the format "rowxcolumn", if not specified the next empty location
 # will be used.
 
-icon = "next"
+icon = ".*next"
 # An icon regex that matches against the the specified icon pack, if no pack is specified all packs will be searched
 
 top = "foo"
@@ -52,4 +56,4 @@ type = "Ctrl+C"
 icon = "home"
 center = "hello"
 [[button.action]]
-type = "Hello world"
+type = "Hello SPACE world"
