@@ -73,6 +73,9 @@ def _resolve_icons(definition: AutopageDef, *, client=None) -> None:
         return
 
     catalog = _build_icon_catalog(client)
+    if not catalog:
+        log.info("Icon catalog is empty, skipping icon resolution")
+        return
 
     for button in buttons_with_icons:
         resolved = _match_icon(button.icon, catalog)

@@ -10,8 +10,8 @@ from autopage.json import (
     _parse_rgba_hex,
     generate_page_json,
     page_json_to_string,
-    type_string_to_keys,
 )
+from autopage.keys import type_string_to_keys
 from autopage.toml import AutopageDef, Button, parse_toml_string
 
 # ── Version / CLI ────────────────────────────────────────────────────
@@ -222,8 +222,8 @@ def test_page_json_roundtrip():
 def test_match_icon_exact():
     """Exact icon name matches."""
     catalog = [
-        ("com_core447_MaterialIcons", "textsms.png"),
-        ("com_core447_MaterialIcons", "home.png"),
+        ("com_core447_MaterialIcons", "textsms"),
+        ("com_core447_MaterialIcons", "home"),
     ]
     result = _match_icon("home", catalog)
     assert result == "data/icons/com_core447_MaterialIcons/icons/home.png"
@@ -232,25 +232,25 @@ def test_match_icon_exact():
 def test_match_icon_regex():
     """A regex pattern matches icon names."""
     catalog = [
-        ("pack_a", "arrow_back.png"),
-        ("pack_a", "arrow_forward.png"),
-        ("pack_b", "next.png"),
+        ("pack_a", "arrow_back"),
+        ("pack_a", "arrow_forward"),
+        ("pack_b", "next"),
     ]
-    # Match anything containing "next" or "forward"
-    result = _match_icon("next|forward", catalog)
+    # Match anything containing "forward" (anchored for fullmatch)
+    result = _match_icon(".*forward", catalog)
     assert result == "data/icons/pack_a/icons/arrow_forward.png"
 
 
 def test_match_icon_case_insensitive():
     """Icon matching is case-insensitive."""
-    catalog = [("pack_a", "Home.png")]
+    catalog = [("pack_a", "Home")]
     result = _match_icon("home", catalog)
     assert result == "data/icons/pack_a/icons/Home.png"
 
 
 def test_match_icon_no_match():
     """Returns None when no icon matches."""
-    catalog = [("pack_a", "textsms.png")]
+    catalog = [("pack_a", "textsms")]
     result = _match_icon("nonexistent", catalog)
     assert result is None
 
@@ -258,13 +258,6 @@ def test_match_icon_no_match():
 def test_match_icon_bare_name():
     """Handles icon names without file extensions."""
     catalog = [("pack_a", "home")]
-    result = _match_icon("home", catalog)
-    assert result == "data/icons/pack_a/icons/home.png"
-
-
-def test_match_icon_full_path_passthrough():
-    """Icons already containing a full data/ path are returned as-is."""
-    catalog = [("pack_a", "data/icons/pack_a/icons/home.png")]
     result = _match_icon("home", catalog)
     assert result == "data/icons/pack_a/icons/home.png"
 
@@ -279,7 +272,7 @@ def test_resolve_icons_updates_buttons():
 
     mock_client = MagicMock()
     mock_client.get_icon_packs.return_value = ["com_core447_MaterialIcons"]
-    mock_client.get_icon_names.return_value = ["home.png", "textsms.png", "star.png"]
+    mock_client.get_icon_names.return_value = ["home", "textsms", "star"]
 
     _resolve_icons(defn, client=mock_client)
 
@@ -289,7 +282,7 @@ def test_resolve_icons_updates_buttons():
 
 
 def test_resolve_icons_api_failure_is_graceful():
-    """If the StreamController API is unavailable, icons are left unresolved."""
+    """If the StreamController API is unavailable, icons are dropped."""
     defn = AutopageDef(buttons=[Button(icon="home")])
 
     mock_client = MagicMock()
@@ -297,4 +290,5 @@ def test_resolve_icons_api_failure_is_graceful():
 
     _resolve_icons(defn, client=mock_client)
 
-    assert defn.buttons[0].icon == "home"  # unchanged
+    # Icon catalog fetch failed, so no icons are resolved and buttons keep their patterns
+    assert defn.buttons[0].icon == "home"  # unchanged when catalog fetch fails

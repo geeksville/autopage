@@ -50,7 +50,7 @@ type = "Ctrl+C"
 # If you want to type an actual space, use "SPACE" as shown above.
 
 # id = "com_core447_OSPlugin::Hotkey"
-# For more advanced actions you can specify the plugin ID and action name (FIXME - not yet implemented)
+# For more advanced actions you can specify the plugin ID and action name
 
 # settings = { "keys" = [[ 30, 1 ], [ 30, 0 ]] }
 # If using the 'id' mechanism you can pass in settings to that plugin via the settings table
