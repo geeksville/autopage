@@ -35,6 +35,7 @@ class Button:
 
     location: str | None = None  # e.g. "1x2"
     icon: str | None = None
+    size: float | None = None  # Optional size hint for the icon, e.g. 0.84
     top: str | None = None
     center: str | None = None
     bottom: str | None = None
@@ -93,6 +94,7 @@ def parse_toml_dict(doc: dict) -> AutopageDef:
             center=b.get("center"),
             bottom=b.get("bottom"),
             background=b.get("background"),
+            size=b.get("size"),
         )
         # Each button may have an [[button.action]] array
         for a in b.get("action", []):

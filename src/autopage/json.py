@@ -220,7 +220,10 @@ def _button_to_json(button: Button) -> dict[str, Any]:
 
     # Icon → media path hint (the runtime will resolve it against icon packs)
     if button.icon:
-        state["media"] = {"path": button.icon, "size": 0.84}
+        m: dict[str, str | float] = {"path": button.icon }
+        if button.size is not None:
+            m["size"] = button.size
+        state["media"] = m
 
     return {"states": {"0": state}}
 

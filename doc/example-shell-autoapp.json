@@ -1,0 +1,187 @@
+{
+    "settings": {
+        "auto-change": {
+            "enable": true,
+            "stay-on-page": false,
+            "decks": [
+                "A00SA5282I2LRM",
+                "fake-deck-1"
+            ],
+            "title": "titleregex",
+            "wm-class": "classregex"
+        },
+        "background": {
+            "overwrite": true,
+            "show": true,
+            "media-path": "./data/Assets/AssetManager/Assets/testbkground.jpg"
+        }
+    },
+    "keys": {
+        "1x2": {
+            "states": {
+                "0": {
+                    "actions": [
+                        {
+                            "id": "com_core447_OSPlugin::Hotkey",
+                            "settings": {
+                                "keys": [
+                                    [
+                                        29,
+                                        1
+                                    ],
+                                    [
+                                        46,
+                                        1
+                                    ],
+                                    [
+                                        46,
+                                        0
+                                    ],
+                                    [
+                                        29,
+                                        0
+                                    ]
+                                ]
+                            }
+                        }
+                    ],
+                    "labels": {
+                        "top": {
+                            "text": "foo"
+                        },
+                        "center": {
+                            "text": "blah"
+                        },
+                        "bottom": {
+                            "text": "bar"
+                        }
+                    },
+                    "background": {
+                        "color": [
+                            255,
+                            34,
+                            68,
+                            170
+                        ]
+                    },
+                    "media": {
+                        "path": "data/icons/com_core447_MaterialIcons/icons/navigate_next.png",
+                        "size": 0.84
+                    }
+                }
+            }
+        },
+        "0x0": {
+            "states": {
+                "0": {
+                    "actions": [
+                        {
+                            "id": "com_core447_OSPlugin::Hotkey",
+                            "settings": {
+                                "keys": [
+                                    [
+                                        42,
+                                        1
+                                    ],
+                                    [
+                                        35,
+                                        1
+                                    ],
+                                    [
+                                        35,
+                                        0
+                                    ],
+                                    [
+                                        42,
+                                        0
+                                    ],
+                                    [
+                                        18,
+                                        1
+                                    ],
+                                    [
+                                        18,
+                                        0
+                                    ],
+                                    [
+                                        38,
+                                        1
+                                    ],
+                                    [
+                                        38,
+                                        0
+                                    ],
+                                    [
+                                        38,
+                                        1
+                                    ],
+                                    [
+                                        38,
+                                        0
+                                    ],
+                                    [
+                                        24,
+                                        1
+                                    ],
+                                    [
+                                        24,
+                                        0
+                                    ],
+                                    [
+                                        17,
+                                        1
+                                    ],
+                                    [
+                                        17,
+                                        0
+                                    ],
+                                    [
+                                        24,
+                                        1
+                                    ],
+                                    [
+                                        24,
+                                        0
+                                    ],
+                                    [
+                                        19,
+                                        1
+                                    ],
+                                    [
+                                        19,
+                                        0
+                                    ],
+                                    [
+                                        38,
+                                        1
+                                    ],
+                                    [
+                                        38,
+                                        0
+                                    ],
+                                    [
+                                        32,
+                                        1
+                                    ],
+                                    [
+                                        32,
+                                        0
+                                    ]
+                                ]
+                            }
+                        }
+                    ],
+                    "labels": {
+                        "center": {
+                            "text": "hello"
+                        }
+                    },
+                    "media": {
+                        "path": "data/icons/com_core447_MaterialIcons/icons/home.png",
+                        "size": 0.84
+                    }
+                }
+            }
+        }
+    }
+}
