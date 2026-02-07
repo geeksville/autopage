@@ -30,6 +30,20 @@ Also the same app-id -> autobutton defs lookup scheme could be used to let users
 * steam://store/{appid}/
 * regex://?class=classnamestr&name=somewinnameregex (ex: "class=org.gnome.Ptyxis" or "class=code" name=".*foo.*" which admittedly is somewhat weak as a 'unique' identifier but it is easy and easy for users to understand)
 
+## Usage
+
+* autopage somepath/foo.ap.toml - Uses just a single ap.toml file (for testing)
+* autopage http://someurl/foo - Looks for an ap.toml file in that URL (using toml-repo), this will implicitly load many possible ap definition files
+
+
+Uses streamcontroller ali_client.AddPage() to add/remove pages as needed.  
+
+* (CURRENT) Release 0.1: Implement example foo.ab.toml files for: vscode, kate editor, ptyxis shell.  Mostly to make sure basic operation works and the toml syntax is brief but clear/simple.  This first version blindly creates pages (via api_client) 1:1 for any found ab.toml files and then exits.
+* (SOMEDAY) Release 0.2: Subscribes to foregroundWindowName/Class notifications, and only creates autobutton pages for apps the user actually encounters on their machine.  Remains running as a daemon and when it is notified of the current app changes, creates and activates a new page as needed.
+* (SOMEDAY) Release 0.3: Use the steam APIs to auto detect running steam games and automatically create template ab.toml files for any encountered games, set the background image for that page based on Steam store image
+
+* Use my toml-repo package to autofetch foo.ab.toml files from a git repo (that others can contribute to). 
+
 # Discuss
 
 For more details/discussion see this [issue](https://github.com/StreamController/StreamController/issues/548)

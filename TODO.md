@@ -4,6 +4,9 @@
 
 * create a poetry based project based on the readme, it will be GPLv3 licensed and eventually distributed on pypi
 * have it import toml-repo from pypi
+* include basic empty test framework
+* include .github CI actions for publishing to pypi and checking for lint and tests passing
+* After this basic build framework is in place stop and let me review
 
 ## Eventually (not now)
 

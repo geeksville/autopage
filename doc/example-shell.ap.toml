@@ -38,7 +38,9 @@ background = "0xff2244aa"
 type = "Ctrl+C"
 # A shorthand to type a series of characters (implicitly this uses com_core447_OSPlugin::Hotkey), other examples:
 # type = "Ctrl+Shift+T" (to open a new terminal tab)
-# type = "Hello world" (to type out "Hello world")
+# type = "Hello SPACE world" (to type out "Hello world")
+# Note: 'spaces' are only used to delineate keys, they are not actually typed, 
+# If you want to type an actual space, use "SPACE" as shown above.
 
 # id = "com_core447_OSPlugin::Hotkey"
 # For more advanced actions you can specify the plugin ID and action name
