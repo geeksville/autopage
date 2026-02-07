@@ -231,6 +231,7 @@ def _button_to_json(button: Button) -> dict[str, Any]:
 def generate_page_json(
     definition: AutopageDef,
     *,
+    decks: list[str] | None = None,
     grid_rows: int = 4,
     grid_cols: int = 4,
 ) -> dict[str, Any]:
@@ -240,12 +241,24 @@ def generate_page_json(
     auto-placed in row-major order into the first available cell.
     """
     page: dict[str, Any] = {
-        "settings": {
-            "auto-change": {"enable": True, "stay-on-page": False},
-            "background": {"overwrite": True, "show": True},
-        },
+        "settings": {},
         "keys": {},
     }
+
+    # Emit auto-change settings when match rules are defined
+    if definition.matches:
+        auto_change: dict[str, Any] = {
+            "enable": True,
+            "stay-on-page": False,
+        }
+        if decks:
+            auto_change["decks"] = decks
+        for match in definition.matches:
+            if match.class_pattern:
+                auto_change["wm-class"] = match.class_pattern
+            if match.name_pattern:
+                auto_change["title"] = match.name_pattern
+        page["settings"]["auto-change"] = auto_change
 
     occupied: set[str] = set()
 

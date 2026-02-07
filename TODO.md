@@ -3,7 +3,6 @@
 ## Near term todo
 
 * check for and replace existing screen names
-* support window match regexes
 * make button coordinates optional
 * use toml-repos to support matching multiple files
 * remove dbus-python==1.3.2 dependency from streamcontroller - use dasbus instead

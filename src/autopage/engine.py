@@ -84,6 +84,19 @@ def _resolve_icons(definition: AutopageDef, *, client=None) -> None:
             button.icon = None
 
 
+def _get_controller_serials() -> list[str]:
+    """Fetch connected controller serial numbers, returning [] on failure."""
+    try:
+        from autopage.api_client import StreamControllerClient
+        client = StreamControllerClient()
+        serials = client.get_controllers()
+        log.info("Found %d controller(s): %s", len(serials), serials)
+        return serials
+    except Exception as exc:
+        log.warning("Could not fetch controllers from StreamController: %s", exc)
+        return []
+
+
 # ── Public API ───────────────────────────────────────────────────────
 
 
@@ -104,7 +117,10 @@ def toml_to_jsonpage(path: str | Path) -> tuple[str, str]:
     # Resolve icon regex patterns to real media paths
     _resolve_icons(definition)
 
-    page = generate_page_json(definition)
+    # Fetch connected deck serial numbers for auto-change
+    decks = _get_controller_serials()
+
+    page = generate_page_json(definition, decks=decks)
     page_json = page_json_to_string(page)
 
     # Derive a page name from the filename (strip .ap.toml suffix)
