@@ -1,0 +1,53 @@
+[[match]]
+# If any of the following patterns match, this autopage will be shown to the user
+# Multiple match tables can be specified, if any of them matches the remainder of this file will
+# be used to build a page.
+class = "code" # A regex that is matched against the window class (WM_CLASS)
+# Other examples
+# class = "org.gnome.Ptyxis" (for flatpaks)
+# name = "Google Drive.*" # A regex that is matched against the window name (WM_NAME)
+
+[background]
+# Defines an (optional) background for the page
+# FIXME figure out how to pass in backgrounds in the page JSON
+
+[[button]]
+
+location = "1x2" 
+# A grid location for the button, in the format "rowxcolumn", if not specified the next empty location
+# will be used.
+
+icon = "next"
+# An icon regex that matches against the the specified icon pack, if no pack is specified all packs will be searched
+
+top = "foo"
+# A top label (optional)
+
+center = "blah" 
+# A center label (optional)
+
+bottom = "bar"
+# A bottom label (optional)
+
+background = "0xff2244aa"
+# A background color for the button, in RGBA format (optional)
+
+[[button.action]]
+# Each button can contain an array of actions
+
+type = "Ctrl+C"
+# A shorthand to type a series of characters (implicitly this uses com_core447_OSPlugin::Hotkey), other examples:
+# type = "Ctrl+Shift+T" (to open a new terminal tab)
+# type = "Hello world" (to type out "Hello world")
+
+# id = "com_core447_OSPlugin::Hotkey"
+# For more advanced actions you can specify the plugin ID and action name
+
+# settings = { "keys" = [[ 30, 1 ], [ 30, 0 ]] }
+# If using the 'id' mechanism you can pass in settings to that plugin via the settings table
+
+[[button]]
+icon = "home"
+center = "hello"
+[[button.action]]
+type = "Hello world"
