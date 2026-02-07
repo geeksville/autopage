@@ -44,12 +44,14 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help()
         return 1
 
-    from autopage.engine import process_toml_file
+    from autopage.engine import push_jsonpage, toml_to_jsonpage
 
     try:
-        page_json = process_toml_file(args.source, dry_run=args.dry_run)
+        page_name, page_json = toml_to_jsonpage(args.source)
         if args.dry_run:
             print(page_json)
+        else:
+            push_jsonpage(page_name, page_json)
     except Exception as exc:
         logging.error("%s", exc)
         return 1

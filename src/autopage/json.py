@@ -160,11 +160,20 @@ def type_string_to_keys(type_str: str) -> list[list[int]]:
 
 
 def _parse_rgba_hex(color_str: str) -> list[int]:
-    """Parse ``'0xRRGGBBAA'`` (or ``'#RRGGBBAA'``) into ``[R, G, B, A]``."""
+    """Parse RGB or RGBA hex color strings into ``[R, G, B, A]``.
+
+    Accepts formats: ``'0xRRGGBB'``, ``'0xRRGGBBAA'``, ``'#RRGGBB'``, ``'#RRGGBBAA'``.
+    If only RGB is provided (6 hex digits), alpha defaults to 255 (0xFF).
+    """
     s = color_str.removeprefix("0x").removeprefix("0X").removeprefix("#")
-    if len(s) != 8:
-        raise ValueError(f"Expected 8 hex digits for RGBA color, got: {color_str!r}")
-    return [int(s[i : i + 2], 16) for i in (0, 2, 4, 6)]
+    if len(s) == 6:
+        # RGB format - default alpha to 255
+        return [int(s[i : i + 2], 16) for i in (0, 2, 4)] + [255]
+    elif len(s) == 8:
+        # RGBA format
+        return [int(s[i : i + 2], 16) for i in (0, 2, 4, 6)]
+    else:
+        raise ValueError(f"Expected 6 or 8 hex digits for RGB/RGBA color, got: {color_str!r}")
 
 
 # ── JSON generation ─────────────────────────────────────────────────

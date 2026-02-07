@@ -170,6 +170,14 @@ def test_parse_rgba_hash():
     assert _parse_rgba_hex("#00ff00ff") == [0, 255, 0, 255]
 
 
+def test_parse_rgb_hex():
+    assert _parse_rgba_hex("0xff2244") == [255, 34, 68, 255]
+
+
+def test_parse_rgb_hash():
+    assert _parse_rgba_hex("#00ff00") == [0, 255, 0, 255]
+
+
 # ── JSON generation ─────────────────────────────────────────────────
 
 
