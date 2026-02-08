@@ -23,9 +23,11 @@ def test_version():
 
 
 def test_cli_help(capsys):
-    """CLI prints help when no arguments given."""
-    rc = main([])
-    assert rc == 1
+    """CLI --help prints usage info."""
+    try:
+        main(["--help"])
+    except SystemExit:
+        pass
     captured = capsys.readouterr()
     assert "autopage" in captured.out
 

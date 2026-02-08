@@ -88,6 +88,8 @@ _NAMED_KEYS: dict[str, int] = {
     "Stop": 166,
     "Previous": 165,
     "Next": 163,
+    # Punctuation keys useful in combos
+    "`": 41, "Grave": 41,
 }
 
 # Also allow bare single-letter key names in combos (e.g. "Ctrl+C")

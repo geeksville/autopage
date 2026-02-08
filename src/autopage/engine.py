@@ -11,6 +11,13 @@ from autopage.toml import AutopageDef, parse_toml_file
 
 log = logging.getLogger(__name__)
 
+# Default remote URL for the autopage-recipes toml-repo index
+REMOTE_RECIPES_URL = (
+    "https://raw.githubusercontent.com/geeksville/autopage-recipes/refs/heads/main"
+)
+# The kind tag used to identify autopage recipe repos
+AP_KIND = "ap"
+
 
 # ── Icon resolution ──────────────────────────────────────────────────
 
@@ -159,3 +166,64 @@ def push_jsonpage(page_name: str, page_json: str, *, force: bool = False) -> Non
         else:
             raise
     log.info("Page %r pushed to StreamController", page_name)
+
+
+def _discover_ap_repos(dev: bool = False) -> list[object]:
+    """Use toml-repo to discover all ap.toml repos.
+
+    Args:
+        dev: If True, use local ``file:autopage-recipes`` directory.
+             Otherwise use the remote GitHub URL.
+
+    Returns:
+        A list of ``Repo`` objects whose kind is ``"ap"``.
+    """
+    from toml_repo import RepoManager, set_config_suffix
+
+    set_config_suffix("ap.toml")
+
+    if dev:
+        # Resolve the local autopage-recipes directory relative to cwd
+        local_path = Path("autopage-recipes").resolve()
+        base_url = f"file://{local_path}"
+    else:
+        base_url = REMOTE_RECIPES_URL
+    log.info("Discovering repos from %s (dev=%s)", base_url, dev)
+
+    manager = RepoManager()
+    _root = manager.add_repo(base_url)
+
+    ap_repos = manager.get_repos_by_kind(AP_KIND)
+    log.info("Found %d repo(s) of kind %r", len(ap_repos), AP_KIND)
+    return ap_repos
+
+
+def process_all_repos(
+    *, dev: bool = False, dry_run: bool = False, force: bool = False
+) -> None:
+    """Discover all ap.toml repos via toml-repo and process each one.
+
+    This is the main entry-point used when no explicit source file is
+    provided on the command line.
+
+    Args:
+        dev: If True, use local autopage-recipes instead of remote.
+        dry_run: If True, print JSON instead of pushing to StreamController.
+        force: If True, replace pages that already exist.
+    """
+    ap_repos = _discover_ap_repos(dev=dev)
+
+    if not ap_repos:
+        log.warning("No repos of kind %r found. Nothing to do.", AP_KIND)
+        return
+
+    for i, repo in enumerate(ap_repos, 1):
+        log.info("Processing repo %d/%d: %s", i, len(ap_repos), repo.url)
+        try:
+            page_name, page_json = toml_to_jsonpage(repo.url)
+            if dry_run:
+                print(page_json)
+            else:
+                push_jsonpage(page_name, page_json, force=force)
+        except Exception as exc:
+            log.error("Error processing repo %s: %s", repo.url, exc)

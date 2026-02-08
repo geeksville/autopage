@@ -34,9 +34,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Replace the page if it already exists (remove then re-add)",
     )
     parser.add_argument(
+        "--dev",
+        action="store_true",
+        help="Use local autopage-recipes directory instead of remote GitHub repo",
+    )
+    parser.add_argument(
         "source",
         nargs="?",
-        help="Path or URL to an ap.toml file or toml-repo directory",
+        help="Path or URL to an ap.toml file. If omitted, uses toml-repo to discover all ap.toml files.",
     )
 
     args = parser.parse_args(argv)
@@ -46,18 +51,19 @@ def main(argv: list[str] | None = None) -> int:
         format="%(levelname)s: %(message)s",
     )
 
-    if args.source is None:
-        parser.print_help()
-        return 1
-
-    from autopage.engine import push_jsonpage, toml_to_jsonpage
+    from autopage.engine import process_all_repos, push_jsonpage, toml_to_jsonpage
 
     try:
-        page_name, page_json = toml_to_jsonpage(args.source)
-        if args.dry_run:
-            print(page_json)
+        if args.source is not None:
+            # Single-file mode
+            page_name, page_json = toml_to_jsonpage(args.source)
+            if args.dry_run:
+                print(page_json)
+            else:
+                push_jsonpage(page_name, page_json, force=args.force)
         else:
-            push_jsonpage(page_name, page_json, force=args.force)
+            # Discovery mode: use toml-repo to find all ap.toml files
+            process_all_repos(dev=args.dev, dry_run=args.dry_run, force=args.force)
     except Exception as exc:
         logging.error("%s", exc)
         return 1
