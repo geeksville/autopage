@@ -4,6 +4,13 @@ import argparse
 import logging
 import sys
 
+from autopage.engine import (
+    listen_and_autoswitch,
+    process_all_repos,
+    push_jsonpage,
+    toml_to_jsonpage,
+)
+
 
 def main(argv: list[str] | None = None) -> int:
     """Entry point for the autopage CLI."""
@@ -39,6 +46,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Use local autopage-recipes directory instead of remote GitHub repo",
     )
     parser.add_argument(
+        "--listen",
+        action="store_true",
+        help="Listen for foreground window changes and auto-switch pages based on match rules",
+    )
+    parser.add_argument(
         "source",
         nargs="?",
         help="Path or URL to an ap.toml file. If omitted, uses toml-repo to discover all ap.toml files.",
@@ -51,10 +63,11 @@ def main(argv: list[str] | None = None) -> int:
         format="%(levelname)s: %(message)s",
     )
 
-    from autopage.engine import process_all_repos, push_jsonpage, toml_to_jsonpage
-
     try:
-        if args.source is not None:
+        if args.listen:
+            # Listen mode: watch for foreground window changes, auto-push matching pages
+            listen_and_autoswitch(dev=args.dev, force=args.force)
+        elif args.source is not None:
             # Single-file mode
             page_name, page_json = toml_to_jsonpage(args.source)
             if args.dry_run:

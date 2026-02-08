@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
+from typing import NamedTuple
 
 from autopage.json import generate_page_json, page_json_to_string
 from autopage.toml import AutopageDef, parse_toml_dict, parse_toml_file
@@ -143,7 +144,27 @@ def toml_to_jsonpage(path: str | Path) -> tuple[str, str]:
     return page_name, page_json
 
 
-def push_jsonpage(page_name: str, page_json: str, *, force: bool = False) -> None:
+def _fetch_known_pages() -> set[str]:
+    """Read the current Pages list from StreamController and return as a set."""
+    from autopage.api_client import StreamControllerClient
+
+    try:
+        client = StreamControllerClient()
+        pages = set(client.get_pages())
+        log.info("Known pages on controller: %s", pages)
+        return pages
+    except Exception as exc:
+        log.warning("Could not fetch existing pages: %s", exc)
+        return set()
+
+
+def push_jsonpage(
+    page_name: str,
+    page_json: str,
+    *,
+    force: bool = False,
+    known_pages: set[str] | None = None,
+) -> bool:
     """Push a JSON page definition to StreamController via DBus API.
 
     Args:
@@ -152,7 +173,19 @@ def push_jsonpage(page_name: str, page_json: str, *, force: bool = False) -> Non
         force: If *True* and the page already exists, remove it first
                then re-add.  Without this flag a pre-existing page is
                treated as an error.
+        known_pages: Optional set of page names already on the controller.
+                     If provided and *force* is False, pages that already
+                     exist are skipped.  Newly pushed pages are added to
+                     the set in-place.
+
+    Returns:
+        True if the page was actually pushed, False if it was skipped.
     """
+    # Skip push if we already know the controller has this page
+    if not force and known_pages is not None and page_name in known_pages:
+        log.info("Page %r already on controller, skipping (use --force to replace)", page_name)
+        return False
+
     from autopage.api_client import StreamControllerClient
 
     client = StreamControllerClient()
@@ -165,7 +198,11 @@ def push_jsonpage(page_name: str, page_json: str, *, force: bool = False) -> Non
             client.add_page(page_name, page_json)
         else:
             raise
+
+    if known_pages is not None:
+        known_pages.add(page_name)
     log.info("Page %r pushed to StreamController", page_name)
+    return True
 
 
 def _discover_ap_repos(dev: bool = False) -> list[object]:
@@ -264,6 +301,8 @@ def process_all_repos(
         log.warning("No repos of kind %r found. Nothing to do.", AP_KIND)
         return
 
+    known_pages = _fetch_known_pages() if not dry_run else set()
+
     for i, repo in enumerate(ap_repos, 1):
         log.info("Processing repo %d/%d: %s", i, len(ap_repos), repo.url)
         try:
@@ -271,6 +310,167 @@ def process_all_repos(
             if dry_run:
                 print(page_json)
             else:
-                push_jsonpage(page_name, page_json, force=force)
+                push_jsonpage(page_name, page_json, force=force, known_pages=known_pages)
         except Exception as exc:
             log.error("Error processing repo %s: %s", repo.url, exc)
+
+
+# ── Prepared page entry for listen mode ──────────────────────────────
+
+
+class _PreparedPage(NamedTuple):
+    """A pre-parsed page with its match rules, ready for window matching."""
+
+    page_name: str
+    definition: AutopageDef
+    repo: object  # the toml-repo Repo object (kept for rebuild)
+
+
+def _prepare_all_repos(dev: bool = False) -> list[_PreparedPage]:
+    """Discover and parse all ap.toml repos, returning prepared pages.
+
+    Each entry contains the parsed definition (with match rules) and the
+    repo object so we can later generate JSON on demand.
+    """
+    ap_repos = _discover_ap_repos(dev=dev)
+    prepared: list[_PreparedPage] = []
+
+    for repo in ap_repos:
+        try:
+            definition = parse_toml_dict(repo.config)
+            definition.source_path = repo.url
+            page_name = _page_name_from_url(repo.url)
+            prepared.append(_PreparedPage(page_name, definition, repo))
+            log.info(
+                "Prepared page %r with %d match rule(s)",
+                page_name,
+                len(definition.matches),
+            )
+        except Exception as exc:
+            log.error("Error preparing repo %s: %s", repo.url, exc)
+
+    return prepared
+
+
+def _match_window(
+    prepared_pages: list[_PreparedPage],
+    window_name: str,
+    window_class: str,
+) -> list[_PreparedPage]:
+    """Return all prepared pages whose match rules match the given window."""
+    matched: list[_PreparedPage] = []
+
+    for entry in prepared_pages:
+        for rule in entry.definition.matches:
+            try:
+                if rule.class_pattern and re.search(
+                    rule.class_pattern, window_class, re.IGNORECASE
+                ):
+                    matched.append(entry)
+                    break
+                if rule.name_pattern and re.search(
+                    rule.name_pattern, window_name, re.IGNORECASE
+                ):
+                    matched.append(entry)
+                    break
+            except re.error as exc:
+                log.warning(
+                    "Bad regex in page %r: %s", entry.page_name, exc
+                )
+
+    return matched
+
+
+def _activate_page_on_all_controllers(page_name: str) -> None:
+    """Set the given page as active on every connected controller."""
+    from autopage.api_client import StreamControllerClient
+
+    client = StreamControllerClient()
+    try:
+        serials = client.get_controllers()
+    except Exception as exc:
+        log.warning("Could not fetch controllers: %s", exc)
+        return
+
+    for serial in serials:
+        try:
+            client.set_active_page(serial, page_name)
+            log.info("Set active page %r on controller %s", page_name, serial)
+        except Exception as exc:
+            log.warning(
+                "Failed to set active page on controller %s: %s", serial, exc
+            )
+
+
+def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
+    """Listen for ForegroundWindow changes and auto-switch pages.
+
+    1. Discover and pre-parse all ap.toml files (like process_all_repos).
+    2. Start listening for DBus property changes on the StreamController service.
+    3. When ForegroundWindow changes, check all match rules.
+    4. For each matching page, push it (respecting --force) and set it active
+       on all controllers.
+    """
+    from autopage.api_client import StreamControllerClient
+
+    prepared_pages = _prepare_all_repos(dev=dev)
+    if not prepared_pages:
+        log.warning("No ap.toml repos found. Nothing to listen for.")
+        return
+
+    # Snapshot which pages the controller already has so we can skip
+    # redundant pushes (unless --force).
+    known_pages = _fetch_known_pages()
+
+    log.info(
+        "Loaded %d page(s) with match rules, %d page(s) already on controller. "
+        "Listening for window changes...",
+        len(prepared_pages),
+        len(known_pages),
+    )
+
+    def on_property_changed(object_path, iface, prop, value):
+        if prop != "ForegroundWindow":
+            return
+
+        if value is None:
+            return
+
+        # ForegroundWindow is a (name, wm_class) tuple/struct
+        try:
+            window_name, window_class = value
+        except (TypeError, ValueError):
+            log.warning("Unexpected ForegroundWindow value: %r", value)
+            return
+
+        log.info(
+            "Window changed: name=%r class=%r", window_name, window_class
+        )
+
+        matched = _match_window(prepared_pages, window_name, window_class)
+
+        if not matched:
+            log.debug("No matching pages for current window")
+            return
+
+        for entry in matched:
+            try:
+                page_name, page_json = repo_to_jsonpage(entry.repo)
+                pushed = push_jsonpage(
+                    page_name, page_json, force=force, known_pages=known_pages
+                )
+                if pushed:
+                    _activate_page_on_all_controllers(page_name)
+                    log.info("Switched to page %r", page_name)
+                else:
+                    log.debug(
+                        "Page %r already on controller, skipping activation",
+                        page_name,
+                    )
+            except Exception as exc:
+                log.error(
+                    "Error pushing page %r: %s", entry.page_name, exc
+                )
+
+    client = StreamControllerClient()
+    client.listen(callback=on_property_changed)

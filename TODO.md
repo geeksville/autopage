@@ -2,7 +2,7 @@
 
 ## Near term todo
 
-* use toml-repos to support matching multiple files
+* do oxygennotincluded and shell shortcuts
 * watch for foreground app changes and create pages only as needed
 * ask devs about https://github.com/geeksville/StreamController/tree/exp-old-dbus-api
 * ask devs about adding api for installing icon packs and plugins
@@ -12,7 +12,6 @@
 * currently we do button wrapping on the client.  It would be better to have the sc 
 app have the concept of "nextfreebutton" as a valid position.  look for usages of 
 key_layout() and add the wrap/cleanup at page load time
-* let user use standard color names instead of hex constants
 * send background images to controller
 * publish pipx app
 * package pipx app as a homebrew app (with homebrew-release-action - which will publish to my 'tap')
