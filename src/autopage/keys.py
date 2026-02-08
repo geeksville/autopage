@@ -65,18 +65,29 @@ _NAMED_KEYS: dict[str, int] = {
     "Backspace": 14,
     # Navigation
     "Escape": 1, "Esc": 1,
-    "Delete": 111, "Del": 111,
-    "Insert": 110, "Ins": 110,
+    "Delete": 111,
+    "Insert": 110,
     "Home": 102, "End": 107,
-    "PageUp": 104, "PgUp": 104,
-    "PageDown": 109, "PgDn": 109,
+    "PageUp": 104,
+    "PageDown": 109,
     "Up": 103, "Down": 108, "Left": 105, "Right": 106,
     # Function keys
     "F1": 59, "F2": 60, "F3": 61, "F4": 62, "F5": 63, "F6": 64,
     "F7": 65, "F8": 66, "F9": 67, "F10": 68, "F11": 87, "F12": 88,
+    "F13": 183, "F14": 184, "F15": 185, "F16": 186, "F17": 187, "F18": 188,
+    "F19": 189, "F20": 190, "F21": 191, "F22": 192, "F23": 193, "F24": 194,
     # Desktop
     "Super": 125, "Meta": 125,
     "CapsLock": 58, "PrintScreen": 99, "ScrollLock": 70, "Pause": 119,
+    # Clipboard operations
+    "Copy": 133, "Paste": 135, "Cut": 137,
+    # Media keys
+    "Mute": 113,
+    "VolumeDown": 114, "VolumeUp": 115,
+    "Play": 164,
+    "Stop": 166,
+    "Previous": 165,
+    "Next": 163,
 }
 
 # Also allow bare single-letter key names in combos (e.g. "Ctrl+C")

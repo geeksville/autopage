@@ -5,6 +5,7 @@
 * check for and replace existing screen names
 * make button coordinates optional
 * use toml-repos to support matching multiple files
+* support special keys like F13 or COPY or PASTE
 * remove dbus-python==1.3.2 dependency from streamcontroller - use dasbus instead
 
 ## Eventually (not now)
