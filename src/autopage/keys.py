@@ -129,6 +129,12 @@ def type_string_to_keys(type_str: str) -> list[list[int]]:
         if token == "SPACE":
             keys.append([57, 1])
             keys.append([57, 0])
+        elif token.startswith("+") and len(token) > 1:
+            # Token like "+Copy" → strip "+" and use the named key
+            key_name = token[1:]
+            keycode = _resolve_key_name(key_name)
+            keys.append([keycode, 1])
+            keys.append([keycode, 0])
         elif "+" in token and token != "+":
             # Hotkey combo: "Ctrl+Shift+T" → split on "+"
             parts = token.split("+")
