@@ -104,8 +104,8 @@ def parse_toml_dict(doc: dict) -> AutopageDef:
             background=merged.get("background"),
             size=merged.get("size"),
         )
-        # Each button may have an [[button.action]] array
-        for a in b.get("action", []):
+        # Each button may have an [[button.actions]] array
+        for a in b.get("actions", []):
             button.actions.append(
                 Action(
                     type=a.get("type"),

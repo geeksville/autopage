@@ -23,6 +23,7 @@ location = "2x1"
 
 icon = ".*next"
 # An icon regex that matches against the the specified icon pack, if no pack is specified all packs will be searched
+# for an easy browser of the Material design icons see https://fonts.google.com/icons
 
 top = "foo"
 # A top label (optional)
@@ -39,7 +40,7 @@ background = "0xff2244aa"
 # size = 0.84
 # An optional size hint for the icon, where 1.0 is the default size
 
-[[button.action]]
+[[button.actions]]
 # Each button can contain an array of actions
 
 type = "Ctrl+C"
@@ -58,11 +59,11 @@ type = "Ctrl+C"
 [[button]]
 icon = "home"
 center = "hello"
-[[button.action]]
+[[button.actions]]
 type = "Hello SPACE world"
 
 [[button]]
 icon = "home"
 center = "hello2"
-[[button.action]]
+[[button.actions]]
 type = "Hello2"
