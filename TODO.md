@@ -3,6 +3,7 @@
 ## Near term todo
 
 * use toml-repos to support matching multiple files
+* watch for foreground app changes and create pages only as needed
 * ask devs about https://github.com/geeksville/StreamController/tree/exp-old-dbus-api
 * ask devs about adding api for installing icon packs and plugins
 

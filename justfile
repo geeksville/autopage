@@ -40,6 +40,14 @@ update:
 example:
     poetry run autopage --dry-run doc/example-shell.ap.toml
 
+# instead of pulling toml-repo from pypi, use the local submodule
+use-toml-repo-local:
+    poetry add --editable ./toml-repo
+
+use-toml-repo-pypi:
+    poetry remove toml-repo
+    poetry add toml-repo
+    
 # Clean build artifacts
 clean:
     rm -rf dist/ build/ *.egg-info
