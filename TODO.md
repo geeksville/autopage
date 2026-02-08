@@ -2,13 +2,15 @@
 
 ## Near term todo
 
-* make button coordinates wrap as needed, currently they just fill first row.  look for usages of key_layout() and add the wrap/cleanup at page load time
 * use toml-repos to support matching multiple files
 * ask devs about https://github.com/geeksville/StreamController/tree/exp-old-dbus-api
 * ask devs about adding api for installing icon packs and plugins
 
 ## Eventually (not now)
 
+* currently we do button wrapping on the client.  It would be better to have the sc 
+app have the concept of "nextfreebutton" as a valid position.  look for usages of 
+key_layout() and add the wrap/cleanup at page load time
 * let user use standard color names instead of hex constants
 * send background images to controller
 * publish pipx app

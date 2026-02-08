@@ -17,8 +17,8 @@ background = "0x00ff0080" # Greenish
 
 [[button]]
 
-location = "1x2" 
-# A grid location for the button, in the format "columnxrow", if not specified the next empty location
+location = "2x1" 
+# A grid location for the button, in the format "column x row", if not specified the next empty location
 # will be used.  Indexes are zero based, so "0x0" is the top-left button.
 
 icon = ".*next"

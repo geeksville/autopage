@@ -90,7 +90,7 @@ def generate_page_json(
     *,
     decks: list[str] | None = None,
     grid_rows: int = 4,
-    grid_cols: int = 4,
+    grid_cols: int = 5,
 ) -> dict[str, Any]:
     """Build a full StreamController page JSON dict from an *AutopageDef*.
 
@@ -127,7 +127,7 @@ def generate_page_json(
     def _next_location() -> str:
         for r in range(grid_rows):
             for c in range(grid_cols):
-                loc = f"{r}x{c}"
+                loc = f"{c}x{r}"
                 if loc not in occupied:
                     occupied.add(loc)
                     return loc
