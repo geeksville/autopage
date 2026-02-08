@@ -2,8 +2,7 @@
 
 ## Near term todo
 
-* check for and replace existing screen names
-* make button coordinates optional
+* make button coordinates wrap as needed, currently they just fill first row.  look for usages of key_layout() and add the wrap/cleanup at page load time
 * use toml-repos to support matching multiple files
 * ask devs about https://github.com/geeksville/StreamController/tree/exp-old-dbus-api
 * ask devs about adding api for installing icon packs and plugins

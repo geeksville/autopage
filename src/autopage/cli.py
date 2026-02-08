@@ -28,6 +28,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Enable verbose logging",
     )
     parser.add_argument(
+        "-f",
+        "--force",
+        action="store_true",
+        help="Replace the page if it already exists (remove then re-add)",
+    )
+    parser.add_argument(
         "source",
         nargs="?",
         help="Path or URL to an ap.toml file or toml-repo directory",
@@ -51,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.dry_run:
             print(page_json)
         else:
-            push_jsonpage(page_name, page_json)
+            push_jsonpage(page_name, page_json, force=args.force)
     except Exception as exc:
         logging.error("%s", exc)
         return 1

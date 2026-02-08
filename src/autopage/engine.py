@@ -136,15 +136,26 @@ def toml_to_jsonpage(path: str | Path) -> tuple[str, str]:
     return page_name, page_json
 
 
-def push_jsonpage(page_name: str, page_json: str) -> None:
+def push_jsonpage(page_name: str, page_json: str, *, force: bool = False) -> None:
     """Push a JSON page definition to StreamController via DBus API.
 
     Args:
         page_name: Name of the page to create.
         page_json: JSON string containing the page definition.
+        force: If *True* and the page already exists, remove it first
+               then re-add.  Without this flag a pre-existing page is
+               treated as an error.
     """
     from autopage.api_client import StreamControllerClient
 
     client = StreamControllerClient()
-    client.add_page(page_name, page_json)
+    try:
+        client.add_page(page_name, page_json)
+    except Exception as exc:
+        if force and "PageExists" in str(exc):
+            log.info("Page %r already exists, replacing (--force)", page_name)
+            client.remove_page(page_name)
+            client.add_page(page_name, page_json)
+        else:
+            raise
     log.info("Page %r pushed to StreamController", page_name)
