@@ -10,7 +10,7 @@ Usage:
     python api_client.py add-page NAME [JSON]                     # Add a page
     python api_client.py remove-page NAME                         # Remove a page
     python api_client.py set-active-page SERIAL NAME              # Set active page on a controller
-    python api_client.py notify-foreground NAME CLASS             # Notify foreground app
+    python api_client.py notify-foreground NAME CLASS             # Notify foreground window
     python api_client.py icon-packs                               # List icon packs
     python api_client.py icons PACK_ID                            # List icons in a pack
     python api_client.py get-property [--serial SERIAL] PROP      # Read a property
@@ -67,8 +67,8 @@ class StreamControllerClient:
         self._root_proxy().RemovePage(name)
 
     def notify_foreground(self, window_name: str, window_class: str) -> None:
-        """Notify StreamController of the current foreground application."""
-        self._root_proxy().NotifyForegroundApp(window_name, window_class)
+        """Notify StreamController of the current foreground window."""
+        self._root_proxy().NotifyForegroundWindow(window_name, window_class)
 
     def get_icon_packs(self) -> list[str]:
         """Return a list of icon pack IDs."""
@@ -151,7 +151,7 @@ def build_parser():
     p.add_argument("serial", help="Controller serial number")
     p.add_argument("name", help="Page name")
 
-    p = sub.add_parser("notify-foreground", help="Notify foreground application")
+    p = sub.add_parser("notify-foreground", help="Notify foreground window")
     p.add_argument("window_name", help="Window title")
     p.add_argument("window_class", help="Window WM_CLASS")
 
@@ -208,7 +208,7 @@ def main():
 
         elif args.command == "notify-foreground":
             client.notify_foreground(args.window_name, args.window_class)
-            print(f"Notified foreground app: name={args.window_name!r} class={args.window_class!r}")
+            print(f"Notified foreground window: name={args.window_name!r} class={args.window_class!r}")
 
         elif args.command == "icon-packs":
             packs = client.get_icon_packs()
