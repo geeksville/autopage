@@ -12,25 +12,26 @@ from typing import Any
 from autopage.keys import type_string_to_keys
 from autopage.toml import Action, AutopageDef, Button
 
+import webcolors
+
+# Default opacity applied to button backgrounds when not specified.
+DEFAULT_OPACITY = 0.75
+
 
 # ── Color parsing ────────────────────────────────────────────────────
 
 
-def _parse_rgba_hex(color_str: str) -> list[int]:
-    """Parse RGB or RGBA hex color strings into ``[R, G, B, A]``.
+def _parse_color(color_str: str, opacity: float = DEFAULT_OPACITY) -> list[int]:
+    """Parse an HTML5 color string into ``[R, G, B, A]``.
 
-    Accepts formats: ``'0xRRGGBB'``, ``'0xRRGGBBAA'``, ``'#RRGGBB'``, ``'#RRGGBBAA'``.
-    If only RGB is provided (6 hex digits), alpha defaults to 255 (0xFF).
+    Uses :func:`webcolors.html5_parse_legacy_color` so any valid HTML5 color
+    is accepted (named colours like ``"green"``, hex like ``"#ff2244"``, etc.).
+
+    *opacity* (0.0 – 1.0) is converted to the alpha byte (0 – 255).
     """
-    s = color_str.removeprefix("0x").removeprefix("0X").removeprefix("#")
-    if len(s) == 6:
-        # RGB format - default alpha to 255
-        return [int(s[i : i + 2], 16) for i in (0, 2, 4)] + [255]
-    elif len(s) == 8:
-        # RGBA format
-        return [int(s[i : i + 2], 16) for i in (0, 2, 4, 6)]
-    else:
-        raise ValueError(f"Expected 6 or 8 hex digits for RGB/RGBA color, got: {color_str!r}")
+    c = webcolors.html5_parse_legacy_color(color_str)
+    alpha = max(0, min(255, round(opacity * 255)))
+    return [c.red, c.green, c.blue, alpha]
 
 
 # ── JSON generation ─────────────────────────────────────────────────
@@ -73,7 +74,8 @@ def _button_to_json(button: Button) -> dict[str, Any]:
 
     # Background colour
     if button.background:
-        state["background"] = {"color": _parse_rgba_hex(button.background)}
+        opacity = button.opacity if button.opacity is not None else DEFAULT_OPACITY
+        state["background"] = {"color": _parse_color(button.background, opacity)}
 
     # Icon → media path hint (the runtime will resolve it against icon packs)
     if button.icon:

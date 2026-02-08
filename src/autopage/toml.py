@@ -39,7 +39,8 @@ class Button:
     top: str | None = None
     center: str | None = None
     bottom: str | None = None
-    background: str | None = None  # RGBA hex like "0xff2244aa"
+    background: str | None = None  # HTML5 color, e.g. "green" or "#ff2244"
+    opacity: float | None = None  # 0.0–1.0, applied to background alpha
     actions: list[Action] = field(default_factory=list)
 
 
@@ -102,6 +103,7 @@ def parse_toml_dict(doc: dict) -> AutopageDef:
             center=merged.get("center"),
             bottom=merged.get("bottom"),
             background=merged.get("background"),
+            opacity=merged.get("opacity"),
             size=merged.get("size"),
         )
         # Each button may have an [[button.actions]] array

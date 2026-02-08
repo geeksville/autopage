@@ -13,7 +13,8 @@ class = "code" # A regex that is matched against the window class (WM_CLASS)
 
 [default]
 # Defaults values for buttons that don't specify them explicitly
-background = "0x00ff0080" # Greenish
+background = "green" # Greenish
+opacity = 0.5 # a default opacity for buttons that don't specify their own, if no default provided 0.75 is used
 
 [[button]]
 
@@ -23,7 +24,7 @@ location = "2x1"
 
 icon = ".*next"
 # An icon regex that matches against the the specified icon pack, if no pack is specified all packs will be searched
-# for an easy browser of the Material design icons see https://fonts.google.com/icons
+# for an easy browser of the Material design icons see https://fonts.google.com/icons?&icon.platform=android&icon.set=Material+Icons
 
 top = "foo"
 # A top label (optional)
@@ -34,8 +35,10 @@ center = "blah"
 bottom = "bar"
 # A bottom label (optional)
 
-background = "0xff2244aa"
-# A background color for the button, in RGBA format (optional)
+background = "#ff2244"
+# A background color for the button, in RGB format (optional)
+opacity = 0.5
+# An optional opacity for the background color, where 1.0 is fully opaque
 
 # size = 0.84
 # An optional size hint for the icon, where 1.0 is the default size

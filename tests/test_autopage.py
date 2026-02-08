@@ -7,7 +7,8 @@ from autopage import __version__
 from autopage.cli import main
 from autopage.engine import _match_icon, _resolve_icons
 from autopage.json import (
-    _parse_rgba_hex,
+    DEFAULT_OPACITY,
+    _parse_color,
     generate_page_json,
     page_json_to_string,
 )
@@ -46,7 +47,7 @@ def test_cli_dry_run(capsys, tmp_path):
     """CLI --dry-run parses a toml file and prints JSON."""
     toml_file = tmp_path / "test.ap.toml"
     toml_file.write_text(
-        '[[button]]\ncenter = "hi"\n[[button.action]]\ntype = "Ctrl+C"\n'
+        '[[button]]\ncenter = "hi"\n[[button.actions]]\ntype = "Ctrl+C"\n'
     )
     rc = main(["--dry-run", str(toml_file)])
     assert rc == 0
@@ -68,16 +69,16 @@ icon = "next"
 top = "foo"
 center = "blah"
 bottom = "bar"
-background = "0xff2244aa"
+background = "#ff2244"
 
-[[button.action]]
+[[button.actions]]
 type = "Ctrl+C"
 
 [[button]]
 icon = "home"
 center = "hello"
 
-[[button.action]]
+[[button.actions]]
 type = "Hello SPACE world"
 """
 
@@ -99,7 +100,7 @@ def test_parse_buttons():
     assert b0.top == "foo"
     assert b0.center == "blah"
     assert b0.bottom == "bar"
-    assert b0.background == "0xff2244aa"
+    assert b0.background == "#ff2244"
     assert len(b0.actions) == 1
     assert b0.actions[0].type == "Ctrl+C"
 
@@ -114,7 +115,7 @@ def test_parse_buttons():
 def test_parse_advanced_action():
     toml_text = """\
 [[button]]
-[[button.action]]
+[[button.actions]]
 id = "com_core447_OSPlugin::Hotkey"
 settings = { "keys" = [[ 30, 1 ], [ 30, 0 ]] }
 """
@@ -166,20 +167,25 @@ def test_type_literal_abc():
 # ── Color parsing ───────────────────────────────────────────────────
 
 
-def test_parse_rgba_hex():
-    assert _parse_rgba_hex("0xff2244aa") == [255, 34, 68, 170]
+def test_parse_color_named():
+    """Named HTML5 colours are parsed with default opacity."""
+    assert _parse_color("green") == [0, 128, 0, round(DEFAULT_OPACITY * 255)]
 
 
-def test_parse_rgba_hash():
-    assert _parse_rgba_hex("#00ff00ff") == [0, 255, 0, 255]
+def test_parse_color_hex():
+    """Hex #RRGGBB colours are parsed with default opacity."""
+    assert _parse_color("#ff2244") == [255, 34, 68, round(DEFAULT_OPACITY * 255)]
 
 
-def test_parse_rgb_hex():
-    assert _parse_rgba_hex("0xff2244") == [255, 34, 68, 255]
+def test_parse_color_with_opacity():
+    """Explicit opacity overrides the default."""
+    assert _parse_color("#00ff00", opacity=1.0) == [0, 255, 0, 255]
+    assert _parse_color("red", opacity=0.5) == [255, 0, 0, 128]
 
 
-def test_parse_rgb_hash():
-    assert _parse_rgba_hex("#00ff00") == [0, 255, 0, 255]
+def test_parse_color_zero_opacity():
+    """Opacity 0.0 yields fully transparent."""
+    assert _parse_color("white", opacity=0.0) == [255, 255, 255, 0]
 
 
 # ── JSON generation ─────────────────────────────────────────────────
@@ -199,7 +205,7 @@ def test_generate_page_json_structure():
     assert key_1x2["labels"]["top"]["text"] == "foo"
     assert key_1x2["labels"]["center"]["text"] == "blah"
     assert key_1x2["labels"]["bottom"]["text"] == "bar"
-    assert key_1x2["background"]["color"] == [255, 34, 68, 170]
+    assert key_1x2["background"]["color"] == [255, 34, 68, round(DEFAULT_OPACITY * 255)]
     assert key_1x2["media"]["path"] == "next"
     assert len(key_1x2["actions"]) == 1
     assert key_1x2["actions"][0]["id"] == "com_core447_OSPlugin::Hotkey"
