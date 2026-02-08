@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 from autopage.json import generate_page_json, page_json_to_string
-from autopage.toml import AutopageDef, parse_toml_file
+from autopage.toml import AutopageDef, parse_toml_dict, parse_toml_file
 
 log = logging.getLogger(__name__)
 
@@ -198,6 +198,53 @@ def _discover_ap_repos(dev: bool = False) -> list[object]:
     return ap_repos
 
 
+def _page_name_from_url(url: str) -> str:
+    """Derive a page name from a repo URL.
+
+    Strips the directory path and the .ap.toml suffix.
+    e.g. "file:///foo/bar/code.ap.toml" → "code"
+    """
+    import os
+    from urllib.parse import urlparse
+
+    basename = os.path.basename(urlparse(url).path)
+    # Strip .ap.toml (or .toml) suffix
+    name = basename
+    if name.endswith(".ap.toml"):
+        name = name[: -len(".ap.toml")]
+    elif name.endswith(".toml"):
+        name = name[: -len(".toml")]
+    return name
+
+
+def repo_to_jsonpage(repo) -> tuple[str, str]:
+    """Convert a toml-repo Repo (with pre-parsed config) to page JSON.
+
+    Uses the already-parsed TOML data from the Repo object rather than
+    re-reading from the filesystem.
+
+    Returns a tuple of (page_name, page_json).
+    """
+    log.info("Building page from repo config: %s", repo.url)
+
+    definition = parse_toml_dict(repo.config)
+    definition.source_path = repo.url
+
+    # Resolve icon regex patterns to real media paths
+    _resolve_icons(definition)
+
+    # Fetch connected deck serial numbers for auto-change
+    decks = _get_controller_serials()
+
+    page = generate_page_json(definition, decks=decks)
+    page_json = page_json_to_string(page)
+
+    page_name = _page_name_from_url(repo.url)
+    log.info("Generated page %r with %d button(s)", page_name, len(definition.buttons))
+
+    return page_name, page_json
+
+
 def process_all_repos(
     *, dev: bool = False, dry_run: bool = False, force: bool = False
 ) -> None:
@@ -220,7 +267,7 @@ def process_all_repos(
     for i, repo in enumerate(ap_repos, 1):
         log.info("Processing repo %d/%d: %s", i, len(ap_repos), repo.url)
         try:
-            page_name, page_json = toml_to_jsonpage(repo.url)
+            page_name, page_json = repo_to_jsonpage(repo)
             if dry_run:
                 print(page_json)
             else:
