@@ -1,0 +1,169 @@
+{
+    "brightness": {
+        "value": 75
+    },
+    "background": {
+        "overwrite": true,
+        "path": "/home/kevinh/.var/app/com.core447.StreamController/data/wallpapers/com_core447_PixabayFavorites/images/tree-5480239_640.jpg",
+        "show": true,
+        "loop": false
+    },
+    "screensaver": {
+        "overwrite": false,
+        "path": null
+    },
+    "keys": {
+        "0x0": {
+            "states": {
+                "0": {
+                    "actions": [
+                        {
+                            "id": "com_geeksville_vscode::NewTerminal",
+                            "settings": {}
+                        }
+                    ],
+                    "image-control-action": 0,
+                    "label-control-actions": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "background-control-action": 0
+                }
+            }
+        },
+        "1x0": {
+            "states": {
+                "0": {
+                    "media": {
+                        "path": "/home/kevinh/.var/app/com.core447.StreamController/data/icons/com_core447_MaterialIcons/icons/home_mini.png"
+                    },
+                    "background": {
+                        "color": [
+                            28,
+                            113,
+                            216,
+                            255
+                        ]
+                    }
+                }
+            }
+        },
+        "4x2": {
+            "states": {
+                "0": {
+                    "actions": [
+                        {
+                            "id": "com_core447_OSPlugin::CPU",
+                            "settings": {}
+                        },
+                        {
+                            "id": "com_core447_OSPlugin::CPU_Graph",
+                            "settings": {}
+                        }
+                    ],
+                    "image-control-action": 1,
+                    "label-control-actions": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "background-control-action": 1,
+                    "labels": {
+                        "top": {
+                            "text": "CPU",
+                            "color": [
+                                87,
+                                227,
+                                137,
+                                255
+                            ]
+                        }
+                    },
+                    "background": {
+                        "color": [
+                            0,
+                            0,
+                            0,
+                            0
+                        ]
+                    }
+                }
+            }
+        },
+        "3x2": {
+            "states": {
+                "0": {
+                    "actions": [
+                        {
+                            "id": "com_core447_OSPlugin::CPUTemp",
+                            "settings": {}
+                        }
+                    ],
+                    "image-control-action": 0,
+                    "label-control-actions": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "background-control-action": 0,
+                    "labels": {
+                        "top": {
+                            "text": "CPU",
+                            "color": [
+                                87,
+                                227,
+                                137,
+                                255
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "2x2": {
+            "states": {
+                "0": {
+                    "actions": [
+                        {
+                            "id": "com_core447_Battery::BatteryPercentage",
+                            "settings": {
+                                "device": "ASUS Battery"
+                            }
+                        }
+                    ],
+                    "image-control-action": 0,
+                    "label-control-actions": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "background-control-action": 0
+                }
+            }
+        },
+        "0x2": {
+            "states": {
+                "0": {
+                    "actions": [
+                        {
+                            "id": "com_core447_Weather::Weather",
+                            "settings": {
+                                "lon": "121.5",
+                                "lat": "25",
+                                "unit": 2
+                            }
+                        }
+                    ],
+                    "image-control-action": 0,
+                    "label-control-actions": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "background-control-action": 0
+                }
+            }
+        }
+    }
+}
