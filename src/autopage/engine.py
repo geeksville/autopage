@@ -455,17 +455,25 @@ def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
 
         for entry in matched:
             try:
-                page_name, page_json = repo_to_jsonpage(entry.repo)
-                pushed = push_jsonpage(
-                    page_name, page_json, force=force, known_pages=known_pages
-                )
-                if pushed:
-                    _activate_page_on_all_controllers(page_name)
-                    log.info("Switched to page %r", page_name)
-                else:
+                page_name = _page_name_from_url(entry.repo.url)
+                if not force and page_name in known_pages:
                     log.debug(
-                        "Page %r already on controller, skipping activation",
+                        "Page %r already on controller, skipping rebuild",
                         page_name,
+                    )
+                else:
+                    # create a new page and switch to it
+                    page_name, page_json = repo_to_jsonpage(entry.repo)
+                    pushed = push_jsonpage(
+                        page_name, page_json, force=force, known_pages=known_pages
+                    )
+                    if pushed:
+                        _activate_page_on_all_controllers(page_name)
+                        log.info("Switched to page %r", page_name)
+                    else:
+                        log.debug(
+                            "Page %r already on controller, skipping activation",
+                            page_name,
                     )
             except Exception as exc:
                 log.error(
