@@ -102,7 +102,7 @@ def parse_toml_dict(doc: dict) -> AutopageDef:
             top=merged.get("top"),
             center=merged.get("center"),
             bottom=merged.get("bottom"),
-            background=merged.get("background"),
+            background=merged.get("background", "green"),
             opacity=merged.get("opacity"),
             size=merged.get("size"),
         )
