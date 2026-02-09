@@ -44,6 +44,33 @@ Uses streamcontroller ali_client.AddPage() to add/remove pages as needed.
 
 * Use my toml-repo package to autofetch foo.ab.toml files from a git repo (that others can contribute to). 
 
+# Streamclient
+
+This project also contains a small command line client for the Streamcontroller app.  I needed it for testing the app API but eventually it might be useful for others:
+
+```
+> poetry run streamclient
+usage: streamclient [-h] {controllers,pages,add-page,remove-page,set-active-page,notify-foreground,icon-packs,icons,get-property,listen} ...
+
+StreamController DBus API client
+
+positional arguments:
+  {controllers,pages,add-page,remove-page,set-active-page,notify-foreground,icon-packs,icons,get-property,listen}
+    controllers         List connected controller serial numbers
+    pages               List all pages
+    add-page            Add a new page (based on an optional JSON template)
+    remove-page         Remove a page
+    set-active-page     Set the active page on a controller
+    notify-foreground   Notify foreground window (for testing window title notifications)
+    icon-packs          List icon packs
+    icons               List icons in a pack
+    get-property        Read a DBus property
+    listen              Listen for property change notifications
+
+options:
+  -h, --help            show this help message and exit
+```
+
 # Discuss
 
 For more details/discussion see this [issue](https://github.com/StreamController/StreamController/issues/548)

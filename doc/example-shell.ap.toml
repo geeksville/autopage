@@ -63,7 +63,7 @@ type = "Ctrl+C"
 icon = "home"
 center = "hello"
 [[button.actions]]
-type = "Hello SPACE world"
+type = "Hello +Space world"
 
 [[button]]
 icon = "home"
