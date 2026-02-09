@@ -1,8 +1,8 @@
 # Autopage
 
-A way to **easily** automatically have pages/button behaviors without having to manually populate each page/button via the GUI. 
+A way to **easily** automatically have pages/button behaviors without having to manually populate each page/button via the [StreamController](https://streamcontroller.github.io/docs/latest/) GUI.
 
-Users can write a small text file to support a new app with keybindings/buttons that will automatically be added to the streamdeck when that app is in the foreground.  
+Users can write a small text file to support a new app with keybindings/buttons that will automatically be added to the streamdeck when that app is in the foreground.
 
 These application recipes are sharable (so we can build a library of auto configured apps).  By default Autopage automatically imports 'approved' contributions from a [autopage-recipes](https://github.com/geeksville/autopage-recipes).  If you add new apps, please send in a pull request!
 
@@ -10,11 +10,11 @@ These application recipes are sharable (so we can build a library of auto config
 
 * Default mode: Just blindly installs auto generated pages onto your Streamcontrollers.  This works fine while the number of app recipes is still small.
 * Background mode: Stays running watching your Streamcontroller, only adds pages if and when it sees a supported app being run on your machine.  Eventually if/when there are many app recipes this will become the default mode of operation.
-
+* Easy! A variety of applications are automatically supported, but if one is missing you can [add it](https://github.com/geeksville/autopage-recipes?tab=readme-ov-file#a-minimal-app-definition).
 ## Installation
 
-* Install ""
-* Install "Material design icon pack", because the buttons will look better with icons.  (Autopage works with all icon packs, but this is a good default one to use)
+* Install the "OS" plug-in from the Steamcontroller store.  This is needed to let the "typing" actions type keys.
+* Install "Material design icon pack" from the store, because the buttons will look **better** with icons.  (Autopage works with all icon packs, but this is a good default one to use)
 * Install [pipx](https://pipx.pypa.io/stable/installation/) if you don't already have it.
 * Run "pipx install stream-autopage"
 
