@@ -118,8 +118,12 @@ def generate_page_json(
         for match in definition.matches:
             if match.class_pattern:
                 auto_change["wm-class"] = match.class_pattern
+            else:
+                auto_change["wm-class"] = ".*"
             if match.name_pattern:
                 auto_change["title"] = match.name_pattern
+            else:
+                auto_change["title"] = ".*"
         page["settings"]["auto-change"] = auto_change
 
     occupied: set[str] = set()
