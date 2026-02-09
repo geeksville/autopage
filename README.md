@@ -12,6 +12,8 @@ These application recipes are sharable (so we can build a library of auto-config
 * Background mode: Stays running watching your StreamController, only adds pages if and when it sees a supported app being run on your machine. Eventually, if/when there are many app recipes, this will become the default mode of operation.
 * Easy! A variety of applications are automatically supported, but if one is missing you can [add it](https://github.com/geeksville/autopage-recipes?tab=readme-ov-file#a-minimal-app-definition).
 
+Here's a short [video](https://youtu.be/nWYgs0SE4BA) demonstrating usage.
+
 ## Installation
 
 * Install the "OS" plug-in from the StreamController store. This is needed to let the "typing" actions type keys.
