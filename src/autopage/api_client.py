@@ -81,6 +81,10 @@ class StreamControllerClient:
         """Notify StreamController of the current foreground window."""
         self._root_proxy().NotifyForegroundWindow(window_name, window_class)
 
+    def get_data_path(self) -> str:
+        """Return the base data path used by StreamController."""
+        return str(self._root_proxy().DataPath)
+
     def get_icon_packs(self) -> list[str]:
         """Return a list of icon pack IDs."""
         return list(self._root_proxy().IconPacks)

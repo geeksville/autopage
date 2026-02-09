@@ -238,6 +238,22 @@ def test_match_icon_exact():
     assert result == "data/icons/com_core447_MaterialIcons/icons/home.png"
 
 
+def test_match_icon_custom_data_path():
+    """Data path from API is used in icon paths."""
+    catalog = [
+        ("com_core447_MaterialIcons", "home"),
+    ]
+    result = _match_icon(
+        "home",
+        catalog,
+        data_path="/home/user/.var/app/com.core447.StreamController/data",
+    )
+    assert result == (
+        "/home/user/.var/app/com.core447.StreamController/data/icons/"
+        "com_core447_MaterialIcons/icons/home.png"
+    )
+
+
 def test_match_icon_regex():
     """A regex pattern matches icon names."""
     catalog = [
@@ -282,6 +298,7 @@ def test_resolve_icons_updates_buttons():
     )
 
     mock_client = MagicMock()
+    mock_client.get_data_path.return_value = "data"
     mock_client.get_icon_packs.return_value = ["com_core447_MaterialIcons"]
     mock_client.get_icon_names.return_value = ["home", "textsms", "star"]
 
@@ -297,6 +314,7 @@ def test_resolve_icons_api_failure_is_graceful():
     defn = AutopageDef(buttons=[Button(icon="home")])
 
     mock_client = MagicMock()
+    mock_client.get_data_path.return_value = "data"
     mock_client.get_icon_packs.side_effect = Exception("no dbus")
 
     _resolve_icons(defn, client=mock_client)

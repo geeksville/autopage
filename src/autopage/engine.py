@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from pathlib import Path
 from typing import NamedTuple
@@ -21,19 +22,27 @@ AP_KIND = "ap"
 # ── Icon resolution ──────────────────────────────────────────────────
 
 
-def _build_icon_catalog(client=None) -> list[tuple[str, str]]:
+def _build_icon_catalog(client=None) -> tuple[list[tuple[str, str]], str]:
     """Fetch all icon packs and their icons from StreamController.
 
     Args:
         client: An optional ``StreamControllerClient`` instance.  When *None*
                 a new client is created (requires DBus).
 
-    Returns a list of ``(pack_id, icon_name)`` tuples.
+    Returns a tuple of (catalog, data_path) where catalog is a list of
+    ``(pack_id, icon_name)`` tuples and data_path is the base path
+    from the StreamController API.
     """
     if client is None:
         from autopage.api_client import get_client
 
         client = get_client()
+
+    data_path = "data"  # fallback
+    try:
+        data_path = client.get_data_path()
+    except Exception as exc:
+        log.warning("Could not fetch DataPath from StreamController: %s", exc)
 
     catalog: list[tuple[str, str]] = []
     try:
@@ -49,21 +58,28 @@ def _build_icon_catalog(client=None) -> list[tuple[str, str]]:
     except Exception as exc:
         log.warning("Could not fetch icon catalog from StreamController: %s", exc)
 
-    return catalog
+    return catalog, data_path
 
 
-def _match_icon(pattern: str, catalog: list[tuple[str, str]]) -> str | None:
+def _match_icon(
+    pattern: str, catalog: list[tuple[str, str]], data_path: str = "data"
+) -> str | None:
     """Match an icon regex against the catalog and return the media path.
 
     The *pattern* is treated as a regex and matched (case-insensitively)
     against the icon name.  The first match wins.
+
+    Args:
+        pattern: Regex to match against icon names.
+        catalog: List of (pack_id, icon_name) tuples.
+        data_path: Base data path from the StreamController API.
     """
     regex = re.compile(pattern, re.IGNORECASE)
 
     for pack_id, icon_name in catalog:
         if regex.fullmatch(icon_name):
             # Build the full media path expected by StreamController.
-            return f"data/icons/{pack_id}/icons/{icon_name}.png"
+            return os.path.join(data_path, "icons", pack_id, "icons", f"{icon_name}.png")
 
     return None
 
@@ -82,13 +98,13 @@ def _resolve_icons(definition: AutopageDef, *, client=None) -> None:
     if not buttons_with_icons:
         return
 
-    catalog = _build_icon_catalog(client)
+    catalog, data_path = _build_icon_catalog(client)
     if not catalog:
         log.info("Icon catalog is empty, skipping icon resolution")
         return
 
     for button in buttons_with_icons:
-        resolved = _match_icon(button.icon, catalog)
+        resolved = _match_icon(button.icon, catalog, data_path)
         if resolved:
             log.info("Resolved icon %r → %s", button.icon, resolved)
             button.icon = resolved
@@ -244,7 +260,6 @@ def _page_name_from_url(url: str) -> str:
     Strips the directory path and the .ap.toml suffix.
     e.g. "file:///foo/bar/code.ap.toml" → "code"
     """
-    import os
     from urllib.parse import urlparse
 
     basename = os.path.basename(urlparse(url).path)
