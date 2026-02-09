@@ -13,9 +13,7 @@ from autopage.toml import AutopageDef, parse_toml_dict, parse_toml_file
 log = logging.getLogger(__name__)
 
 # Default remote URL for the autopage-recipes toml-repo index
-REMOTE_RECIPES_URL = (
-    "https://raw.githubusercontent.com/geeksville/autopage-recipes/refs/heads/main"
-)
+REMOTE_RECIPES_URL = "https://raw.githubusercontent.com/geeksville/autopage-recipes/refs/heads/main"
 # The kind tag used to identify autopage recipe repos
 AP_KIND = "ap"
 
@@ -34,6 +32,7 @@ def _build_icon_catalog(client=None) -> list[tuple[str, str]]:
     """
     if client is None:
         from autopage.api_client import get_client
+
         client = get_client()
 
     catalog: list[tuple[str, str]] = []
@@ -42,8 +41,11 @@ def _build_icon_catalog(client=None) -> list[tuple[str, str]]:
             log.debug("Fetching icons for pack %r", pack_id)
             for icon_name in client.get_icon_names(pack_id):
                 catalog.append((pack_id, icon_name))
-        log.info("Icon catalog: %d icon(s) across %d pack(s)",
-                len(catalog), len(set(p for p, _ in catalog)))
+        log.info(
+            "Icon catalog: %d icon(s) across %d pack(s)",
+            len(catalog),
+            len(set(p for p, _ in catalog)),
+        )
     except Exception as exc:
         log.warning("Could not fetch icon catalog from StreamController: %s", exc)
 
@@ -99,6 +101,7 @@ def _get_controller_serials() -> list[str]:
     """Fetch connected controller serial numbers, returning [] on failure."""
     try:
         from autopage.api_client import get_client
+
         client = get_client()
         serials = client.get_controllers()
         log.info("Found %d controller(s): %s", len(serials), serials)
@@ -282,9 +285,7 @@ def repo_to_jsonpage(repo) -> tuple[str, str]:
     return page_name, page_json
 
 
-def process_all_repos(
-    *, dev: bool = False, dry_run: bool = False, force: bool = False
-) -> None:
+def process_all_repos(*, dev: bool = False, dry_run: bool = False, force: bool = False) -> None:
     """Discover all ap.toml repos via toml-repo and process each one.
 
     This is the main entry-point used when no explicit source file is
@@ -374,9 +375,7 @@ def _match_window(
                     matched.append(entry)
                     break
             except re.error as exc:
-                log.warning(
-                    "Bad regex in page %r: %s", entry.page_name, exc
-                )
+                log.warning("Bad regex in page %r: %s", entry.page_name, exc)
 
     return matched
 
@@ -397,9 +396,7 @@ def _activate_page_on_all_controllers(page_name: str) -> None:
             client.set_active_page(serial, page_name)
             log.info("Set active page %r on controller %s", page_name, serial)
         except Exception as exc:
-            log.warning(
-                "Failed to set active page on controller %s: %s", serial, exc
-            )
+            log.warning("Failed to set active page on controller %s: %s", serial, exc)
 
 
 def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
@@ -443,9 +440,7 @@ def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
             log.warning("Unexpected ForegroundWindow value: %r", value)
             return
 
-        log.info(
-            "Window changed: name=%r class=%r", window_name, window_class
-        )
+        log.info("Window changed: name=%r class=%r", window_name, window_class)
 
         matched = _match_window(prepared_pages, window_name, window_class)
 
@@ -474,11 +469,9 @@ def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
                         log.debug(
                             "Page %r already on controller, skipping activation",
                             page_name,
-                    )
+                        )
             except Exception as exc:
-                log.error(
-                    "Error pushing page %r: %s", entry.page_name, exc
-                )
+                log.error("Error pushing page %r: %s", entry.page_name, exc)
 
     client = get_client()
     client.listen(callback=on_property_changed)

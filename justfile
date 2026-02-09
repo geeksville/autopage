@@ -17,11 +17,11 @@ lint:
     poetry run ruff check src/ tests/
 
 # Auto-fix linting issues
-lint-fix:
+lint-fix: lint-format
     poetry run ruff check --fix src/ tests/
 
 # Format code
-fmt:
+lint-format:
     poetry run ruff format src/ tests/
 
 # Build the package
@@ -47,7 +47,7 @@ use-toml-repo-local:
 use-toml-repo-pypi:
     poetry remove toml-repo
     poetry add toml-repo
-    
+
 # Clean build artifacts
 clean:
     rm -rf dist/ build/ *.egg-info

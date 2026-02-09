@@ -24,11 +24,11 @@ import sys
 from dasbus.connection import SessionMessageBus
 from gi.repository import GLib
 
-SERVICE    = "com.core447.StreamController"
-OBJECT     = "/com/core447/StreamController"
-IFACE      = "com.core447.StreamController"
+SERVICE = "com.core447.StreamController"
+OBJECT = "/com/core447/StreamController"
+IFACE = "com.core447.StreamController"
 CTRL_IFACE = "com.core447.StreamController.Controller"
-CTRL_BASE  = OBJECT + "/controllers"
+CTRL_BASE = OBJECT + "/controllers"
 
 
 def _serial_to_dbus_path(serial: str) -> str:
@@ -130,8 +130,13 @@ class StreamControllerClient:
         # Subscribe on root and all sub-objects
         for path in (OBJECT, None):
             connection.signal_subscribe(
-                SERVICE, "org.freedesktop.DBus.Properties",
-                "PropertiesChanged", path, None, 0, on_signal,
+                SERVICE,
+                "org.freedesktop.DBus.Properties",
+                "PropertiesChanged",
+                path,
+                None,
+                0,
+                on_signal,
             )
 
         print(f"Listening for property changes on {SERVICE} …  (Ctrl+C to stop)")
@@ -143,6 +148,7 @@ class StreamControllerClient:
 
 
 # ── CLI ──────────────────────────────────────────────────────────────
+
 
 def build_parser():
     parser = argparse.ArgumentParser(description="StreamController DBus API client")
@@ -175,10 +181,10 @@ def build_parser():
     p.add_argument("pack_id", help="Icon pack ID")
 
     p = sub.add_parser("get-property", help="Read a DBus property")
-    p.add_argument("--serial", "-s", default=None,
-                   help="Controller serial (omit for top-level properties)")
-    p.add_argument("property_name",
-                   help="Property name (Controllers, Pages, ActivePageName, …)")
+    p.add_argument(
+        "--serial", "-s", default=None, help="Controller serial (omit for top-level properties)"
+    )
+    p.add_argument("property_name", help="Property name (Controllers, Pages, ActivePageName, …)")
 
     sub.add_parser("listen", help="Listen for property change notifications")
 
@@ -223,8 +229,7 @@ def main():
         elif args.command == "notify-foreground":
             client.notify_foreground(args.window_name, args.window_class)
             print(
-                f"Notified foreground window: "
-                f"name={args.window_name!r} class={args.window_class!r}"
+                f"Notified foreground window: name={args.window_name!r} class={args.window_class!r}"
             )
 
         elif args.command == "icon-packs":

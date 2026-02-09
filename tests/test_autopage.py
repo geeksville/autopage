@@ -46,9 +46,7 @@ def test_cli_version(capsys):
 def test_cli_dry_run(capsys, tmp_path):
     """CLI --dry-run parses a toml file and prints JSON."""
     toml_file = tmp_path / "test.ap.toml"
-    toml_file.write_text(
-        '[[button]]\ncenter = "hi"\n[[button.actions]]\ntype = "Ctrl+C"\n'
-    )
+    toml_file.write_text('[[button]]\ncenter = "hi"\n[[button.actions]]\ntype = "Ctrl+C"\n')
     rc = main(["--dry-run", str(toml_file)])
     assert rc == 0
     captured = capsys.readouterr()
@@ -158,9 +156,12 @@ def test_type_hello_space_world():
 def test_type_literal_abc():
     keys = type_string_to_keys("abc")
     assert keys == [
-        [30, 1], [30, 0],  # a
-        [48, 1], [48, 0],  # b
-        [46, 1], [46, 0],  # c
+        [30, 1],
+        [30, 0],  # a
+        [48, 1],
+        [48, 0],  # b
+        [46, 1],
+        [46, 0],  # c
     ]
 
 
@@ -272,11 +273,13 @@ def test_match_icon_bare_name():
 
 def test_resolve_icons_updates_buttons():
     """_resolve_icons replaces icon patterns with resolved paths."""
-    defn = AutopageDef(buttons=[
-        Button(icon="home"),
-        Button(icon="textsms"),
-        Button(center="no icon"),
-    ])
+    defn = AutopageDef(
+        buttons=[
+            Button(icon="home"),
+            Button(icon="textsms"),
+            Button(center="no icon"),
+        ]
+    )
 
     mock_client = MagicMock()
     mock_client.get_icon_packs.return_value = ["com_core447_MaterialIcons"]
