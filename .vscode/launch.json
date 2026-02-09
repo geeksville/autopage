@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Autopage: Dry Run Shell Example",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "autopage.cli",
+            "args": [
+                "--dry-run",
+                "doc/example-shell.ap.toml"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": true
+        }
+    ]
+}

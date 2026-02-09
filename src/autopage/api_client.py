@@ -162,7 +162,10 @@ def build_parser():
     p.add_argument("serial", help="Controller serial number")
     p.add_argument("name", help="Page name")
 
-    p = sub.add_parser("notify-foreground", help="Notify foreground window (for testing window title notifications)")
+    p = sub.add_parser(
+        "notify-foreground",
+        help="Notify foreground window (for testing window title notifications)",
+    )
     p.add_argument("window_name", help="Window title")
     p.add_argument("window_class", help="Window WM_CLASS")
 
@@ -219,7 +222,10 @@ def main():
 
         elif args.command == "notify-foreground":
             client.notify_foreground(args.window_name, args.window_class)
-            print(f"Notified foreground window: name={args.window_name!r} class={args.window_class!r}")
+            print(
+                f"Notified foreground window: "
+                f"name={args.window_name!r} class={args.window_class!r}"
+            )
 
         elif args.command == "icon-packs":
             packs = client.get_icon_packs()

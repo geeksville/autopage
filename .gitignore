@@ -13,12 +13,6 @@ build/
 venv/
 ENV/
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
 # Testing / Coverage
 .coverage
 htmlcov/

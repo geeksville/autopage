@@ -10,10 +10,10 @@ import json
 import logging
 from typing import Any
 
+import webcolors
+
 from autopage.keys import type_string_to_keys
 from autopage.toml import Action, AutopageDef, Button
-
-import webcolors
 
 log = logging.getLogger(__name__)
 

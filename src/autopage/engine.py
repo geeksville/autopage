@@ -74,7 +74,7 @@ def _resolve_icons(definition: AutopageDef, *, client=None) -> None:
                     in-place.
         client: An optional ``StreamControllerClient`` instance (for testing).
 
-    Buttons whose icon cannot be resolved will have the icon dropped.  
+    Buttons whose icon cannot be resolved will have the icon dropped.
     """
     buttons_with_icons = [b for b in definition.buttons if b.icon]
     if not buttons_with_icons:

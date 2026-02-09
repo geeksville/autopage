@@ -53,7 +53,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "source",
         nargs="?",
-        help="Path or URL to an ap.toml file. If omitted, uses toml-repo to discover all ap.toml files.",
+        help=(
+            "Path or URL to an ap.toml file. "
+            "If omitted, uses toml-repo to discover all ap.toml files."
+        ),
     )
 
     args = parser.parse_args(argv)

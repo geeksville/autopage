@@ -1,0 +1,20 @@
+{
+    // ---- General Editor Settings ----
+    "files.trimTrailingWhitespace": true,
+    "editor.formatOnSave": true,
+    // ---- Python-Specific Settings ----
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+        }
+    },
+    // Python testing
+    "python.testing.pytestArgs": [
+        "tests",
+        "-v"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}
