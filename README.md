@@ -1,48 +1,38 @@
 # Autopage
 
-An easy way to textually describe (on a per app basis) easy automatic keybindings/buttons that will be added to the streamdeck when that app is in the foreground.  
-
-WARNING You probably don't want this yet - I'm still writing it.
-
-# Mini-spec
-
 A way to **easily** automatically have pages/button behaviors without having to manually populate each page/button via the GUI. 
 
-* Get informed by streamcontroller when the foreground app changes. 
-* Based on window class/name regexes try to find a foo.ap.toml file for that app.  If found, parse that file and add buttons/actions.
-* Autopage defs can be bunded into the app or in a [toml-repo](https://pypi.org/project/toml-repo/).  I'll create semi public 'master' autopages repo which anyone can send in PRs to to add new apps.  If you'd like we can someday move it into your StreamController gh org?
-* I'll premake and include a set of common autopage def files (kwrite, vscode, etc..)
-* Whenever the foreground app changes, if the user hasn't already specified a page for that app and and a ab.toml match is found -> create a page for that user.  Icons and labels will be auto selected for buttons based on regex matching vs the users installed asset packs.
+Users can write a small text file to support a new app with keybindings/buttons that will automatically be added to the streamdeck when that app is in the foreground.  
 
-This TBD foo.ap.toml file will say stuff like:
+These application recipes are sharable (so we can build a library of auto configured apps).  By default Autopage automatically imports 'approved' contributions from a [github repo](https://github.com/geeksville/autopage-recipes).  If you add new apps, please send in a pull request!
 
-*  "I'm for kwrite or vscode or gimp"
-* Here's a list of buttons node (this node can have stuff like background color specified if the user wishes)
-* Add a button with icon "copy" whos action is "paste ctrl-c"  (it will search <icon pack> for icons matching that regex). 
-* Alternate more flexible ways of specifying custom icons could be provided in the future)
-(The format will be very human readable and succinct - but it will be processed to generate json compatible with your existing import/export page format)
+# Features
 
-## App Ids
+* Default mode: Just blindly installs auto generated pages onto your Streamcontrollers.  This works fine while the number of app recipes is still small.
+* Background mode: Stays running watching your Streamcontroller, only adds pages if and when it sees a supported app being run on your machine.  Eventually if/when there are many app recipes this will become the default mode of operation.
 
-Also the same app-id -> autobutton defs lookup scheme could be used to let users define standard mappings for Steam games.  I'm thinking the resolution would work based on a few types of expressions:
+## Installation
 
-* flatpak://foo.blah.app
-* steam://store/{appid}/
-* regex://?class=classnamestr&name=somewinnameregex (ex: "class=org.gnome.Ptyxis" or "class=code" name=".*foo.*" which admittedly is somewhat weak as a 'unique' identifier but it is easy and easy for users to understand)
+* Install ""
+* Install "Material design icon pack", because the buttons will look better with icons.  (Autopage works with all icon packs, but this is a good default one to use)
+* Install "pipx" if you don't already have it.
+* Run "pipx install autopage"
 
 ## Usage
 
-* autopage somepath/foo.ap.toml - Uses just a single ap.toml file (for testing)
-* autopage http://someurl/foo - Looks for an ap.toml file in that URL (using toml-repo), this will implicitly load many possible ap definition files
+* "autopage" - This will install known autopage definitions onto your Streamcontroller (try this first)
+* "autopage --listen" - This will run in the background and only create pages if it sees you use a supported app.  (Until there are lots of pages you probably don't need to bother with this)
+* "autopage somepath/foo.ap.toml" - Uses just a single ap.toml file (for testing/using your own new app definitions)
 
+# A note to Streamcontroller developers
 
-Uses streamcontroller ali_client.AddPage() to add/remove pages as needed.  
+* I've structured this app so that someday we could just move it into the Streamcontroller flatpak, when that happens I'm happy to move this repo (and the recipes repo to your organization.  Mostly I just want it to be useful. ;-)
 
-* (CURRENT) Release 0.1: Implement example foo.ab.toml files for: vscode, kate editor, ptyxis shell.  Mostly to make sure basic operation works and the toml syntax is brief but clear/simple.  This first version blindly creates pages (via api_client) 1:1 for any found ab.toml files and then exits.
-* (SOMEDAY) Release 0.2: Subscribes to foregroundWindowName/Class notifications, and only creates autobutton pages for apps the user actually encounters on their machine.  Remains running as a daemon and when it is notified of the current app changes, creates and activates a new page as needed.
+## History
+
+* (DONE) Release 0.1: Implement example foo.ab.toml files for: vscode, kate editor, ptyxis shell.  Mostly to make sure basic operation works and the toml syntax is brief but clear/simple.  This first version blindly creates pages (via api_client) 1:1 for any found ab.toml files and then exits.
+* (DONE) Release 0.2: Subscribes to foregroundWindowName/Class notifications, and only creates autobutton pages for apps the user actually encounters on their machine.  Remains running as a daemon and when it is notified of the current app changes, creates and activates a new page as needed.
 * (SOMEDAY) Release 0.3: Use the steam APIs to auto detect running steam games and automatically create template ab.toml files for any encountered games, set the background image for that page based on Steam store image
-
-* Use my toml-repo package to autofetch foo.ab.toml files from a git repo (that others can contribute to). 
 
 # Streamclient
 
