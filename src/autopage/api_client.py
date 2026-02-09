@@ -35,6 +35,17 @@ def _serial_to_dbus_path(serial: str) -> str:
     return re.sub(r"[^A-Za-z0-9_]", "_", serial)
 
 
+_singleton_client: "StreamControllerClient | None" = None
+
+
+def get_client() -> "StreamControllerClient":
+    """Return the shared singleton StreamControllerClient, creating it lazily."""
+    global _singleton_client
+    if _singleton_client is None:
+        _singleton_client = StreamControllerClient()
+    return _singleton_client
+
+
 class StreamControllerClient:
     """Client for the StreamController DBus API."""
 
@@ -140,7 +151,7 @@ def build_parser():
     sub.add_parser("controllers", help="List connected controller serial numbers")
     sub.add_parser("pages", help="List all pages")
 
-    p = sub.add_parser("add-page", help="Add a new page")
+    p = sub.add_parser("add-page", help="Add a new page (based on an optional JSON template)")
     p.add_argument("name", help="Page name")
     p.add_argument("json", nargs="?", default="", help="JSON contents (optional)")
 
@@ -151,7 +162,7 @@ def build_parser():
     p.add_argument("serial", help="Controller serial number")
     p.add_argument("name", help="Page name")
 
-    p = sub.add_parser("notify-foreground", help="Notify foreground window")
+    p = sub.add_parser("notify-foreground", help="Notify foreground window (for testing window title notifications)")
     p.add_argument("window_name", help="Window title")
     p.add_argument("window_class", help="Window WM_CLASS")
 
@@ -179,7 +190,7 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    client = StreamControllerClient()
+    client = get_client()
 
     try:
         if args.command == "controllers":

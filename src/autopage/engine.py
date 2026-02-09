@@ -33,8 +33,8 @@ def _build_icon_catalog(client=None) -> list[tuple[str, str]]:
     Returns a list of ``(pack_id, icon_name)`` tuples.
     """
     if client is None:
-        from autopage.api_client import StreamControllerClient
-        client = StreamControllerClient()
+        from autopage.api_client import get_client
+        client = get_client()
 
     catalog: list[tuple[str, str]] = []
     try:
@@ -98,8 +98,8 @@ def _resolve_icons(definition: AutopageDef, *, client=None) -> None:
 def _get_controller_serials() -> list[str]:
     """Fetch connected controller serial numbers, returning [] on failure."""
     try:
-        from autopage.api_client import StreamControllerClient
-        client = StreamControllerClient()
+        from autopage.api_client import get_client
+        client = get_client()
         serials = client.get_controllers()
         log.info("Found %d controller(s): %s", len(serials), serials)
         return serials
@@ -146,10 +146,10 @@ def toml_to_jsonpage(path: str | Path) -> tuple[str, str]:
 
 def _fetch_known_pages() -> set[str]:
     """Read the current Pages list from StreamController and return as a set."""
-    from autopage.api_client import StreamControllerClient
+    from autopage.api_client import get_client
 
     try:
-        client = StreamControllerClient()
+        client = get_client()
         pages = set(client.get_pages())
         log.info("Known pages on controller: %s", pages)
         return pages
@@ -186,9 +186,9 @@ def push_jsonpage(
         log.info("Page %r already on controller, skipping (use --force to replace)", page_name)
         return False
 
-    from autopage.api_client import StreamControllerClient
+    from autopage.api_client import get_client
 
-    client = StreamControllerClient()
+    client = get_client()
     try:
         client.add_page(page_name, page_json)
     except Exception as exc:
@@ -363,12 +363,12 @@ def _match_window(
     for entry in prepared_pages:
         for rule in entry.definition.matches:
             try:
-                if rule.class_pattern and re.search(
+                if rule.class_pattern and re.fullmatch(
                     rule.class_pattern, window_class, re.IGNORECASE
                 ):
                     matched.append(entry)
                     break
-                if rule.name_pattern and re.search(
+                if rule.name_pattern and re.fullmatch(
                     rule.name_pattern, window_name, re.IGNORECASE
                 ):
                     matched.append(entry)
@@ -383,9 +383,9 @@ def _match_window(
 
 def _activate_page_on_all_controllers(page_name: str) -> None:
     """Set the given page as active on every connected controller."""
-    from autopage.api_client import StreamControllerClient
+    from autopage.api_client import get_client
 
-    client = StreamControllerClient()
+    client = get_client()
     try:
         serials = client.get_controllers()
     except Exception as exc:
@@ -411,7 +411,7 @@ def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
     4. For each matching page, push it (respecting --force) and set it active
        on all controllers.
     """
-    from autopage.api_client import StreamControllerClient
+    from autopage.api_client import get_client
 
     prepared_pages = _prepare_all_repos(dev=dev)
     if not prepared_pages:
@@ -472,5 +472,5 @@ def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
                     "Error pushing page %r: %s", entry.page_name, exc
                 )
 
-    client = StreamControllerClient()
+    client = get_client()
     client.listen(callback=on_property_changed)
