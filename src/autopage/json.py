@@ -7,12 +7,15 @@ StreamController's AddPage DBus API (matching the structure in doc/sample-page.j
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any
 
 from autopage.keys import type_string_to_keys
 from autopage.toml import Action, AutopageDef, Button
 
 import webcolors
+
+log = logging.getLogger(__name__)
 
 # Default opacity applied to button backgrounds when not specified.
 DEFAULT_OPACITY = 0.75
@@ -91,7 +94,7 @@ def generate_page_json(
     definition: AutopageDef,
     *,
     decks: list[str] | None = None,
-    grid_rows: int = 4,
+    grid_rows: int = 3,
     grid_cols: int = 5,
 ) -> dict[str, Any]:
     """Build a full StreamController page JSON dict from an *AutopageDef*.
@@ -137,7 +140,10 @@ def generate_page_json(
 
     for button in definition.buttons:
         location = button.location or _next_location()
-        page["keys"][location] = _button_to_json(button)
+        try:
+            page["keys"][location] = _button_to_json(button)
+        except Exception as e:
+            log.error(f"Skipping button at {location} due to: {e}")
 
     return page
 

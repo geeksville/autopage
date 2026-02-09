@@ -59,7 +59,7 @@ _NAMED_KEYS: dict[str, int] = {
     "Shift": _KEY_LEFTSHIFT,
     "Alt": _KEY_LEFTALT,
     # Whitespace / editing
-    "SPACE": 57, "Space": 57,
+    "Space": 57,
     "Enter": 28, "Return": 28,
     "Tab": 15,
     "Backspace": 14,
@@ -71,6 +71,8 @@ _NAMED_KEYS: dict[str, int] = {
     "PageUp": 104,
     "PageDown": 109,
     "Up": 103, "Down": 108, "Left": 105, "Right": 106,
+    # + is on = key and minus is a common alias for hyphen
+    "Plus": 13, "Minus": 12,
     # Function keys
     "F1": 59, "F2": 60, "F3": 61, "F4": 62, "F5": 63, "F6": 64,
     "F7": 65, "F8": 66, "F9": 67, "F10": 68, "F11": 87, "F12": 88,
