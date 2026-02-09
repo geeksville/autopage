@@ -56,3 +56,7 @@ clean:
 
 # Run all checks (lint + test)
 check: lint test
+
+# release a new version to pypi
+bump-version newver="patch": test
+    bin/new-version.sh {{newver}}

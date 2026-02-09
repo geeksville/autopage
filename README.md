@@ -4,7 +4,7 @@ A way to **easily** automatically have pages/button behaviors without having to 
 
 Users can write a small text file to support a new app with keybindings/buttons that will automatically be added to the streamdeck when that app is in the foreground.  
 
-These application recipes are sharable (so we can build a library of auto configured apps).  By default Autopage automatically imports 'approved' contributions from a [github repo](https://github.com/geeksville/autopage-recipes).  If you add new apps, please send in a pull request!
+These application recipes are sharable (so we can build a library of auto configured apps).  By default Autopage automatically imports 'approved' contributions from a [autopage-recipes](https://github.com/geeksville/autopage-recipes).  If you add new apps, please send in a pull request!
 
 # Features
 
@@ -15,8 +15,8 @@ These application recipes are sharable (so we can build a library of auto config
 
 * Install ""
 * Install "Material design icon pack", because the buttons will look better with icons.  (Autopage works with all icon packs, but this is a good default one to use)
-* Install "pipx" if you don't already have it.
-* Run "pipx install autopage"
+* Install [pipx](https://pipx.pypa.io/stable/installation/) if you don't already have it.
+* Run "pipx install stream-autopage"
 
 ## Usage
 
