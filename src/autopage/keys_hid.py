@@ -15,6 +15,24 @@ import logging
 
 log = logging.getLogger(__name__)
 
+# Named keys that map to HID Consumer Control (Usage Page 0x0C) rather than
+# keyboard page 0x07. Values are consumer usage codes; the corresponding
+# constants live in ``touchy_pad.api.macros``.
+_CONSUMER_KEYS: dict[str, str] = {
+    "Copy": "COPY",
+    "Cut": "CUT",
+    "Paste": "PASTE",
+    "Undo": "UNDO",
+    "Redo": "REDO",
+    "SelectAll": "SELECT_ALL",
+    "Find": "FIND",
+    "Mute": "MUTE",
+    "VolumeUp": "VOLUME_UP",
+    "VolumeDown": "VOLUME_DOWN",
+    "Play": "PLAY_PAUSE",
+    "Previous": "PLAY_PAUSE",  # best available approximation
+}
+
 
 def _named_keys() -> dict[str, int]:
     """Map symbolic key names to HID keycodes (non-modifier keys only)."""
@@ -91,6 +109,13 @@ def type_string_to_macro_steps(type_str: str):
     steps = []
 
     def tap_named(name: str) -> None:
+        # Consumer-Control names → consumer_key() step (Usage Page 0x0C).
+        if name in _CONSUMER_KEYS:
+            from touchy_pad.api import macros as _m
+
+            usage = getattr(_m, _CONSUMER_KEYS[name])
+            steps.append(macros.consumer_key(usage))
+            return
         code = named.get(name)
         if code is None:
             log.warning("No HID keycode for named key %r, skipping", name)
