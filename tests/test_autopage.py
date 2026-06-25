@@ -44,10 +44,10 @@ def test_cli_version(capsys):
 
 
 def test_cli_dry_run(capsys, tmp_path):
-    """CLI --dry-run parses a toml file and prints JSON."""
+    """CLI --dry-run parses a toml file and prints JSON (StreamController backend)."""
     toml_file = tmp_path / "test.ap.toml"
     toml_file.write_text('[[button]]\ncenter = "hi"\n[[button.actions]]\ntype = "Ctrl+C"\n')
-    rc = main(["--dry-run", str(toml_file)])
+    rc = main(["--dry-run", "--streamcontroller", str(toml_file)])
     assert rc == 0
     captured = capsys.readouterr()
     page = json.loads(captured.out)

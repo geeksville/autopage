@@ -8,7 +8,6 @@ import re
 from pathlib import Path
 from typing import NamedTuple
 
-from autopage.json import generate_page_json, page_json_to_string
 from autopage.toml import AutopageDef, parse_toml_dict, parse_toml_file
 
 log = logging.getLogger(__name__)
@@ -130,28 +129,34 @@ def _get_controller_serials() -> list[str]:
 # ── Public API ───────────────────────────────────────────────────────
 
 
-def toml_to_jsonpage(path: str | Path) -> tuple[str, str]:
-    """Convert an ap.toml file to StreamController page JSON.
+def toml_to_jsonpage(path: str | Path) -> tuple[str, object]:
+    """Convert an ap.toml file to a backend-native page artifact.
 
     1. Parse the TOML definition.
-    2. Resolve icon patterns against StreamController icon packs.
-    3. Generate StreamController page JSON.
+    2. Let the active backend resolve icon hints.
+    3. Render the backend-native page artifact.
 
-    Returns a tuple of (page_name, page_json).
+    Returns a tuple of (page_name, artifact). The artifact is a JSON string
+    for the StreamController backend or a touchy-pad ``Widget`` for the
+    Touchy backend; pass it straight to :func:`push_jsonpage`.
     """
+    from autopage.api_client import get_client
+
     path = Path(path)
     log.info("Loading autopage definition from %s", path)
 
     definition = parse_toml_file(path)
 
-    # Resolve icon regex patterns to real media paths
-    _resolve_icons(definition)
+    client = get_client()
+
+    # Let the backend resolve icon hints (StreamController matches against its
+    # icon packs; other backends may no-op).
+    client.resolve_icons(definition)
 
     # Fetch connected deck serial numbers for auto-change
     decks = _get_controller_serials()
 
-    page = generate_page_json(definition, decks=decks)
-    page_json = page_json_to_string(page)
+    artifact = client.render_page(definition, decks=decks)
 
     # Derive a page name from the filename (strip .ap.toml suffix)
     page_name = path.stem
@@ -160,7 +165,7 @@ def toml_to_jsonpage(path: str | Path) -> tuple[str, str]:
 
     log.info("Generated page %r with %d button(s)", page_name, len(definition.buttons))
 
-    return page_name, page_json
+    return page_name, artifact
 
 
 def _fetch_known_pages() -> set[str]:
@@ -179,49 +184,28 @@ def _fetch_known_pages() -> set[str]:
 
 def push_jsonpage(
     page_name: str,
-    page_json: str,
+    artifact: object,
     *,
     force: bool = False,
     known_pages: set[str] | None = None,
 ) -> bool:
-    """Push a JSON page definition to StreamController via DBus API.
+    """Push a rendered page artifact to the active backend.
 
     Args:
         page_name: Name of the page to create.
-        page_json: JSON string containing the page definition.
-        force: If *True* and the page already exists, remove it first
-               then re-add.  Without this flag a pre-existing page is
-               treated as an error.
-        known_pages: Optional set of page names already on the controller.
-                     If provided and *force* is False, pages that already
-                     exist are skipped.  Newly pushed pages are added to
-                     the set in-place.
+        artifact: Backend-native page artifact from :func:`toml_to_jsonpage`.
+        force: If *True* and the page already exists, replace it.
+        known_pages: Optional set of page names already on the target. If
+                     provided and *force* is False, pages that already exist
+                     are skipped. Newly pushed pages are added in-place.
 
     Returns:
         True if the page was actually pushed, False if it was skipped.
     """
-    # Skip push if we already know the controller has this page
-    if not force and known_pages is not None and page_name in known_pages:
-        log.info("Page %r already on controller, skipping (use --force to replace)", page_name)
-        return False
-
     from autopage.api_client import get_client
 
     client = get_client()
-    try:
-        client.add_page(page_name, page_json)
-    except Exception as exc:
-        if force and "PageExists" in str(exc):
-            log.info("Page %r already exists, replacing (--force)", page_name)
-            client.remove_page(page_name)
-            client.add_page(page_name, page_json)
-        else:
-            raise
-
-    if known_pages is not None:
-        known_pages.add(page_name)
-    log.info("Page %r pushed to StreamController", page_name)
-    return True
+    return client.push_page(page_name, artifact, force=force, known_pages=known_pages)
 
 
 def _discover_ap_repos(dev: bool = False) -> list[object]:
@@ -272,32 +256,35 @@ def _page_name_from_url(url: str) -> str:
     return name
 
 
-def repo_to_jsonpage(repo) -> tuple[str, str]:
-    """Convert a toml-repo Repo (with pre-parsed config) to page JSON.
+def repo_to_jsonpage(repo) -> tuple[str, object]:
+    """Convert a toml-repo Repo (with pre-parsed config) to a page artifact.
 
     Uses the already-parsed TOML data from the Repo object rather than
     re-reading from the filesystem.
 
-    Returns a tuple of (page_name, page_json).
+    Returns a tuple of (page_name, artifact) (see :func:`toml_to_jsonpage`).
     """
+    from autopage.api_client import get_client
+
     log.info("Building page from repo config: %s", repo.url)
 
     definition = parse_toml_dict(repo.config)
     definition.source_path = repo.url
 
-    # Resolve icon regex patterns to real media paths
-    _resolve_icons(definition)
+    client = get_client()
+
+    # Let the backend resolve icon hints.
+    client.resolve_icons(definition)
 
     # Fetch connected deck serial numbers for auto-change
     decks = _get_controller_serials()
 
-    page = generate_page_json(definition, decks=decks)
-    page_json = page_json_to_string(page)
+    artifact = client.render_page(definition, decks=decks)
 
     page_name = _page_name_from_url(repo.url)
     log.info("Generated page %r with %d button(s)", page_name, len(definition.buttons))
 
-    return page_name, page_json
+    return page_name, artifact
 
 
 def process_all_repos(*, dev: bool = False, dry_run: bool = False, force: bool = False) -> None:
@@ -311,6 +298,8 @@ def process_all_repos(*, dev: bool = False, dry_run: bool = False, force: bool =
         dry_run: If True, print JSON instead of pushing to StreamController.
         force: If True, replace pages that already exist.
     """
+    from autopage.api_client import get_client
+
     ap_repos = _discover_ap_repos(dev=dev)
 
     if not ap_repos:
@@ -319,14 +308,15 @@ def process_all_repos(*, dev: bool = False, dry_run: bool = False, force: bool =
 
     known_pages = _fetch_known_pages() if not dry_run else set()
 
+    client = get_client() if dry_run else None
     for i, repo in enumerate(ap_repos, 1):
         log.info("Processing repo %d/%d: %s", i, len(ap_repos), repo.url)
         try:
-            page_name, page_json = repo_to_jsonpage(repo)
+            page_name, artifact = repo_to_jsonpage(repo)
             if dry_run:
-                print(page_json)
+                print(client.artifact_to_text(artifact))
             else:
-                push_jsonpage(page_name, page_json, force=force, known_pages=known_pages)
+                push_jsonpage(page_name, artifact, force=force, known_pages=known_pages)
         except Exception as exc:
             log.error("Error processing repo %s: %s", repo.url, exc)
 
@@ -441,20 +431,7 @@ def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
         len(known_pages),
     )
 
-    def on_property_changed(object_path, iface, prop, value):
-        if prop != "ForegroundWindow":
-            return
-
-        if value is None:
-            return
-
-        # ForegroundWindow is a (name, wm_class) tuple/struct
-        try:
-            window_name, window_class = value
-        except (TypeError, ValueError):
-            log.warning("Unexpected ForegroundWindow value: %r", value)
-            return
-
+    def on_window_changed(window_name, window_class):
         log.info("Window changed: name=%r class=%r", window_name, window_class)
 
         matched = _match_window(prepared_pages, window_name, window_class)
@@ -473,9 +450,9 @@ def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
                     )
                 else:
                     # create a new page and switch to it
-                    page_name, page_json = repo_to_jsonpage(entry.repo)
+                    page_name, artifact = repo_to_jsonpage(entry.repo)
                     pushed = push_jsonpage(
-                        page_name, page_json, force=force, known_pages=known_pages
+                        page_name, artifact, force=force, known_pages=known_pages
                     )
                     if pushed:
                         _activate_page_on_all_controllers(page_name)
@@ -489,4 +466,4 @@ def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
                 log.error("Error pushing page %r: %s", entry.page_name, exc)
 
     client = get_client()
-    client.listen(callback=on_property_changed)
+    client.listen_foreground(on_window_changed)

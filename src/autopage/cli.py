@@ -51,6 +51,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Listen for foreground window changes and auto-switch pages based on match rules",
     )
     parser.add_argument(
+        "--streamcontroller",
+        action="store_true",
+        help="Use the legacy StreamController DBus backend instead of touchy-pad",
+    )
+    parser.add_argument(
         "source",
         nargs="?",
         help=(
@@ -66,17 +71,26 @@ def main(argv: list[str] | None = None) -> int:
         format="%(levelname)s: %(message)s",
     )
 
+    from autopage.api_client import (
+        BACKEND_STREAMCONTROLLER,
+        BACKEND_TOUCHY,
+        get_client,
+        set_backend,
+    )
+
+    set_backend(BACKEND_STREAMCONTROLLER if args.streamcontroller else BACKEND_TOUCHY)
+
     try:
         if args.listen:
             # Listen mode: watch for foreground window changes, auto-push matching pages
             listen_and_autoswitch(dev=args.dev, force=args.force)
         elif args.source is not None:
             # Single-file mode
-            page_name, page_json = toml_to_jsonpage(args.source)
+            page_name, artifact = toml_to_jsonpage(args.source)
             if args.dry_run:
-                print(page_json)
+                print(get_client().artifact_to_text(artifact))
             else:
-                push_jsonpage(page_name, page_json, force=args.force)
+                push_jsonpage(page_name, artifact, force=args.force)
         else:
             # Discovery mode: use toml-repo to find all ap.toml files
             process_all_repos(dev=args.dev, dry_run=args.dry_run, force=args.force)
