@@ -10,31 +10,11 @@ import json
 import logging
 from typing import Any
 
-import webcolors
-
+from autopage.color import DEFAULT_OPACITY, parse_color_rgba
 from autopage.keys import type_string_to_keys
 from autopage.toml import Action, AutopageDef, Button
 
 log = logging.getLogger(__name__)
-
-# Default opacity applied to button backgrounds when not specified.
-DEFAULT_OPACITY = 0.75
-
-
-# ── Color parsing ────────────────────────────────────────────────────
-
-
-def _parse_color(color_str: str, opacity: float = DEFAULT_OPACITY) -> list[int]:
-    """Parse an HTML5 color string into ``[R, G, B, A]``.
-
-    Uses :func:`webcolors.html5_parse_legacy_color` so any valid HTML5 color
-    is accepted (named colours like ``"green"``, hex like ``"#ff2244"``, etc.).
-
-    *opacity* (0.0 – 1.0) is converted to the alpha byte (0 – 255).
-    """
-    c = webcolors.html5_parse_legacy_color(color_str)
-    alpha = max(0, min(255, round(opacity * 255)))
-    return [c.red, c.green, c.blue, alpha]
 
 
 # ── JSON generation ─────────────────────────────────────────────────
@@ -78,7 +58,7 @@ def _button_to_json(button: Button) -> dict[str, Any]:
     # Background colour
     if button.background:
         opacity = button.opacity if button.opacity is not None else DEFAULT_OPACITY
-        state["background"] = {"color": _parse_color(button.background, opacity)}
+        state["background"] = {"color": parse_color_rgba(button.background, opacity)}
 
     # Icon → media path hint (the runtime will resolve it against icon packs)
     if button.icon:

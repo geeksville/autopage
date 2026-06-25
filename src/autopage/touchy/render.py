@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 
+from autopage.color import DEFAULT_OPACITY, parse_color_int
 from autopage.keys_hid import type_string_to_macro_steps
 from autopage.toml import AutopageDef, Button
 from autopage.touchy.icons import render_icon
@@ -145,10 +146,17 @@ def render_widget(
             png = render_icon(button.icon, size=KEY_PIXELS)
             if png is not None:
                 asset = png
+
+        btn_style = None
+        if button.background:
+            opacity = button.opacity if button.opacity is not None else DEFAULT_OPACITY
+            btn_style = s.style(bg_color=parse_color_int(button.background, opacity))
+
         btn = s.image_button(
             id=f"ap_btn_{i}",
             asset=asset,
             on_click=_button_actions(button),
+            style=btn_style,
         )
         children.append(s.cell(btn, col=col, row=row, grow_x=1, grow_y=1))
 

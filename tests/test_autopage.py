@@ -5,10 +5,9 @@ from unittest.mock import MagicMock
 
 from autopage import __version__
 from autopage.cli import main
+from autopage.color import DEFAULT_OPACITY, parse_color_rgba
 from autopage.engine import _match_icon, _resolve_icons
 from autopage.json import (
-    DEFAULT_OPACITY,
-    _parse_color,
     generate_page_json,
     page_json_to_string,
 )
@@ -170,23 +169,23 @@ def test_type_literal_abc():
 
 def test_parse_color_named():
     """Named HTML5 colours are parsed with default opacity."""
-    assert _parse_color("green") == [0, 128, 0, round(DEFAULT_OPACITY * 255)]
+    assert parse_color_rgba("green") == [0, 128, 0, round(DEFAULT_OPACITY * 255)]
 
 
 def test_parse_color_hex():
     """Hex #RRGGBB colours are parsed with default opacity."""
-    assert _parse_color("#ff2244") == [255, 34, 68, round(DEFAULT_OPACITY * 255)]
+    assert parse_color_rgba("#ff2244") == [255, 34, 68, round(DEFAULT_OPACITY * 255)]
 
 
 def test_parse_color_with_opacity():
     """Explicit opacity overrides the default."""
-    assert _parse_color("#00ff00", opacity=1.0) == [0, 255, 0, 255]
-    assert _parse_color("red", opacity=0.5) == [255, 0, 0, 128]
+    assert parse_color_rgba("#00ff00", opacity=1.0) == [0, 255, 0, 255]
+    assert parse_color_rgba("red", opacity=0.5) == [255, 0, 0, 128]
 
 
 def test_parse_color_zero_opacity():
     """Opacity 0.0 yields fully transparent."""
-    assert _parse_color("white", opacity=0.0) == [255, 255, 255, 0]
+    assert parse_color_rgba("white", opacity=0.0) == [255, 255, 255, 0]
 
 
 # ── JSON generation ─────────────────────────────────────────────────
