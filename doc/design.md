@@ -281,3 +281,161 @@ returns `["touchy-pad"]`, so `_activate_page_on_all_controllers` works as-is.
   `ForegroundSource` ABC is the seam for these.
 * Event-driven (vs. polled) window changes on KDE, if kdotool/KWin grows a
   signal we can subscribe to.
+
+## Stage 4: make background graphics work
+
+**Status: done.** Implemented per the plan below (`toml.background_url`,
+`touchy/background.fetch_background`, `render_widget(background_path=...)`
+absolute-layout composite, and `TouchyApiClient` fetch+cache via `ImageCache`).
+39 tests pass, ruff clean. Hardware open-detail (absolute root fill) noted below
+still to confirm on-device.
+
+### Goal
+
+Honour a page-level background image on the **touchy-pad** backend. When an
+`ap.toml` declares
+
+```toml
+[background]
+url = "https://www.geeksville.com/robots.png"
+```
+
+the rendered user-screen draws that image scaled to fit the page body, with the
+button grid composited on top. Per-button `opacity` (already supported) lets the
+background show through. Non-touchy (StreamController) backends are out of scope
+for this stage.
+
+> The example file [`doc/example-shell.ap.toml`](example-shell.ap.toml) already
+> documents `[background] url`, but `parse_toml_dict` silently drops it today —
+> there is no `background` field on `AutopageDef`.
+
+### Background — existing building blocks
+
+* **HTTP fetch.** The CLI's `touchpad_image(url)`
+  ([`app/src/touchy_pad/cli.py`](../../../app/src/touchy_pad/cli.py)) fetches a
+  URL with `urllib.request` (stdlib) using a browser `User-Agent` and a timeout,
+  then hands the raw bytes to the image pipeline. Pillow (`Image.open`) decodes
+  PNG / JPEG / GIF / BMP / WebP; GIFs stay animated (`lv_gif`), everything else
+  becomes an LVGL `.bin`. We reuse the same fetch shape but **must not** write to
+  an `F:` path manually.
+* **Cached image upload.** `ImageCache`
+  ([`app/src/touchy_pad/api/image_cache.py`](../../../app/src/touchy_pad/api/image_cache.py))
+  `.set_cached_image(data)` normalises a `PIL.Image` / `bytes` (PNG / JPEG / GIF
+  / …), content-hash-dedups, uploads once to the transient `T:host/icache/`
+  drive, and **returns the device path** (with the right suffix). Crucially it
+  **passes GIFs through verbatim with a `.gif` suffix** — the firmware's native
+  `lv_gif` decoder then animates them with no extra work (`is_gif` →
+  `rescale_gif` fit; everything else → `to_lvgl_bin` `.bin`). This is the
+  path-based route the background should use.
+* **Why not the dynamic `ImageSource` route.** `screens.image(asset=...)` also
+  accepts an `ImageSource` / bare `PIL.Image` / `bytes`, but that path always
+  encodes through `to_lvgl_bin` → a `.bin` at a `.bin` path, which **flattens an
+  animated GIF to a single frame**. So for backgrounds we upload via
+  `ImageCache` (path-based, GIF-preserving) and hand `image()` the returned
+  **path string**, rather than passing bytes/`ImageSource`.
+* **Grid root.** `render_widget`
+  ([`src/autopage/touchy/render.py`](../src/autopage/touchy/render.py)) builds a
+  single `protobuf.Widget` with a `layout_grid` (`cols`×`rows`, gap `KEY_GAP`)
+  whose children are the per-button `image_button`s in `cell(...)`s. This grid is
+  what we layer on top of the background.
+
+### 1. Parse `[background]` (`src/autopage/toml.py`)
+
+* Add `background_url: str | None = None` to `AutopageDef`.
+* In `parse_toml_dict`, read `doc.get("background", {}).get("url")` and store it
+  on the result (alongside the existing `match` / `default` / `button` parsing).
+* No `[default]`/merge interaction — it's a page-level field, like `matches`.
+
+### 2. Fetch the image (`src/autopage/touchy/background.py`, new)
+
+A tiny helper, isolated so the network dependency stays out of `render.py`. We do
+**no** image processing of our own — `ImageCache` already normalises everything
+(GIF passthrough, static → `.bin`, aspect-preserving downscale to its `max_dim`),
+so we just fetch and hand it the raw bytes:
+
+* `fetch_background(url) -> bytes | None` — fetch with `urllib.request` (same
+  `User-Agent` + timeout pattern as `touchpad_image`) and return the raw bytes;
+  return `None` (log a warning) on any network error — a missing background must
+  never break rendering.
+
+That's it: no Pillow, no GIF/static branching, no resize in our code. The cache's
+`max_dim` does the sizing and its `is_gif` check keeps GIFs animated.
+
+### 3. Composite background behind the grid
+
+Upload happens where a device is available, so the fetch+cache lives in
+`TouchyApiClient` ([`src/autopage/touchy/__init__.py`](../src/autopage/touchy/__init__.py)),
+and `render_widget` ([`render.py`](../src/autopage/touchy/render.py)) stays pure
+(takes an already-uploaded path):
+
+* In `render_page` (which already has the connected pad via `_grid_dims`): if
+  `definition.background_url` is set **and** a device is present, call
+  `background.fetch_background(url)`, then
+  `ImageCache(pad, max_dim=max(page_w, page_h)).set_cached_image(raw)` to get a
+  device `background_path` (a `T:host/icache/<hash>.gif` or `.bin`, scaled
+  aspect-preserving to the page). Pass it into `render_widget`.
+* Compute the page body's pixel size from the grid geometry we already own:
+  `page_w = cols * KEY_PIXELS + (cols + 1) * KEY_GAP`,
+  `page_h = rows * KEY_PIXELS + (rows + 1) * KEY_GAP` (matching `auto_grid`'s
+  pitch math).
+* `render_widget(..., background_path: str | None = None)`: when a path is given,
+  draw the image first and the grid second (LVGL paints siblings in child order,
+  so later siblings cover earlier ones) by wrapping both in an **absolute-layout
+  root** sized to the page:
+  * background = `s.image(id="autopage_bg", asset=background_path,
+    rect=s.rect(0, 0, page_w, page_h))` — a plain path string, so no re-encode
+    and (for `.gif`) the firmware animates it for free. The cached bitmap is
+    aspect-fit to the page, so it sits centred in the full-page rect.
+  * `root = protobuf.Widget(id="autopage_root")`, `s.absolute()` layout,
+    `root.rect = s.rect(0, 0, page_w, page_h)`, children `[background, grid]`.
+    The grid is re-parented `id="autopage_root"` → `id="autopage_grid"` with
+    `rect=s.rect(0, 0, page_w, page_h)` so it overlays the full background.
+* **No background** (`background_url` unset, no device, or fetch failed):
+  `background_path` is `None` and `render_widget` returns the bare grid exactly
+  as today — no wrapper, no asset cost. Common case unchanged.
+
+> Open implementation detail to verify on hardware: whether the absolute root
+> needs explicit `grow_x/grow_y` to fill the chrome's `widget_ref(id="page")`
+> slot, or whether the fixed `rect` size suffices. The grid path already fills
+> the slot via grid layout; the wrapped path must match. Fallback if absolute
+> sizing misbehaves: set the background as the **grid root's first child** under
+> the existing grid by giving it a `cell` spanning all `cols`×`rows`
+> (`col_span=cols, row_span=rows`, `grow_x/grow_y=1`) and adding it *before* the
+> buttons so it paints underneath.
+
+### 4. Caching / dry-run / failures
+
+* One `ImageCache` per `TouchyApiClient` (or per render) → background uploaded
+  once to `T:host/icache/`, content-hash-dedup avoids re-upload of identical
+  bytes across pages/refreshes.
+* `--dry-run` / no device: the fetch+cache is gated on a connected pad, so no
+  network or upload happens — `background_path` is `None` and the page renders as
+  the bare grid. (This sidesteps the earlier "should dry-run hit the network?"
+  question entirely: it doesn't.)
+* All failures (bad URL, timeout, decode error, unsupported format) degrade to
+  "no background", logged at WARNING, page still renders.
+
+### 5. Tests (`tools/autopage/tests/test_autopage.py`)
+
+* `toml`: `[background] url = "..."` parses into `AutopageDef.background_url`;
+  absent table → `None`.
+* `background.py`: monkeypatch `urllib.request.urlopen` to return canned bytes →
+  `fetch_background` returns them; network error → `None`. (No normalisation to
+  test — that lives in `ImageCache`, already covered by
+  `app/tests/test_image_cache.py`.)
+* `render`: call `render_widget(..., background_path="T:host/icache/x.gif")` and
+  assert the root is the absolute wrapper whose first child is the background
+  image (with that path) and second is the grid; with `background_path=None`,
+  assert the root is the bare grid (unchanged).
+
+### Deferred
+
+* Background on non-touchy (StreamController) backends.
+* Per-button background images (only page-level for this stage).
+* Pixel-perfect *stretch* / cover-with-crop (today backgrounds are
+  aspect-preserving fit via `ImageCache(max_dim=...)`, so a non-page-aspect image
+  is centred with margins rather than filling edge to edge).
+
+## TBD
+
+INFO: Window changed: name='Glyphica' class='steam_app_2400160'

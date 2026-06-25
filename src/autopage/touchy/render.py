@@ -48,6 +48,13 @@ def auto_grid(display_w: int, display_h: int) -> tuple[int, int]:
     return int(cols), int(rows)
 
 
+def page_pixels(cols: int, rows: int) -> tuple[int, int]:
+    """Pixel size of a ``cols x rows`` page body (cells + surrounding gaps)."""
+    page_w = cols * KEY_PIXELS + (cols + 1) * KEY_GAP
+    page_h = rows * KEY_PIXELS + (rows + 1) * KEY_GAP
+    return page_w, page_h
+
+
 def _parse_location(location: str) -> tuple[int, int] | None:
     """Parse a ``"<col>x<row>"`` location string into ``(col, row)``."""
     try:
@@ -100,12 +107,18 @@ def render_widget(
     cols: int,
     rows: int,
     placeholder_path: str,
+    background_path: str | None = None,
 ):
     """Build the user-screen page body ``Widget`` for *definition*.
 
     Buttons with an explicit ``location`` are placed there; the rest are
     auto-placed in row-major order into the first free cell (mirrors
     ``autopage.json.generate_page_json``).
+
+    When *background_path* is given (an already-uploaded device image path),
+    the grid is composited on top of a full-page background image: the image is
+    drawn first and the grid second (LVGL paints siblings in child order), so
+    per-button ``opacity`` lets the backdrop show through.
     """
     from touchy_pad.api import protobuf
     from touchy_pad.api import screens as s
@@ -161,9 +174,28 @@ def render_widget(
         )
         children.append(s.cell(btn, col=col, row=row, grow_x=1, grow_y=1))
 
-    page = protobuf.Widget(id="autopage_root")
-    page.layout_grid.cols = cols
-    page.layout_grid.rows = rows
-    page.layout_grid.gap = KEY_GAP
-    page.layout_grid.layout.children.extend(children)
-    return page
+    grid = protobuf.Widget(id="autopage_root")
+    grid.layout_grid.cols = cols
+    grid.layout_grid.rows = rows
+    grid.layout_grid.gap = KEY_GAP
+    grid.layout_grid.layout.children.extend(children)
+
+    if background_path is None:
+        return grid
+
+    # Composite the grid over a full-page background image. Both children fill
+    # the page rect; the image is first (drawn underneath), the grid second.
+    page_w, page_h = page_pixels(cols, rows)
+    grid.id = "autopage_grid"
+    grid.rect.CopyFrom(s.rect(0, 0, page_w, page_h))
+
+    background = s.image(
+        id="autopage_bg",
+        asset=background_path,
+        rect=s.rect(0, 0, page_w, page_h),
+    )
+
+    root = protobuf.Widget(id="autopage_root")
+    root.rect.CopyFrom(s.rect(0, 0, page_w, page_h))
+    root.layout_absolute.layout.children.extend([background, grid])
+    return root

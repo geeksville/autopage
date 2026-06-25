@@ -527,3 +527,95 @@ def test_engine_skips_redundant_activation(monkeypatch):
 
     # Activated once for win1; win2 maps to the same page → no re-activation.
     assert client.activations == [("touchy-pad", "code")]
+
+
+# ── Stage 4: page background image ───────────────────────────────────
+
+
+def test_toml_parses_background_url():
+    """A [background] table's url lands on AutopageDef.background_url."""
+    toml_text = """
+[background]
+url = "https://example.com/bg.gif"
+
+[[buttons]]
+center = "x"
+"""
+    defn = parse_toml_string(toml_text)
+    assert defn.background_url == "https://example.com/bg.gif"
+
+
+def test_toml_background_absent_is_none():
+    """No [background] table → background_url is None."""
+    defn = parse_toml_string('[[buttons]]\ncenter = "x"\n')
+    assert defn.background_url is None
+
+
+def test_fetch_background_returns_bytes(monkeypatch):
+    """fetch_background returns the raw bytes from the response."""
+    from autopage.touchy import background
+
+    class _Resp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return b"GIF89a-data"
+
+    monkeypatch.setattr(background.urllib.request, "urlopen", lambda req, timeout: _Resp())
+    assert background.fetch_background("https://x/bg.gif") == b"GIF89a-data"
+
+
+def test_fetch_background_network_error_returns_none(monkeypatch):
+    """A network failure degrades to None (no background)."""
+    from autopage.touchy import background
+
+    def _boom(req, timeout):
+        raise OSError("no network")
+
+    monkeypatch.setattr(background.urllib.request, "urlopen", _boom)
+    assert background.fetch_background("https://x/bg.gif") is None
+
+
+def test_fetch_background_rejects_non_http():
+    """Non-http(s) URLs are refused without a network call."""
+    from autopage.touchy import background
+
+    assert background.fetch_background("file:///etc/passwd") is None
+
+
+def test_render_widget_without_background_is_bare_grid():
+    """No background_path → the root is the grid itself (unchanged)."""
+    from autopage.touchy.render import render_widget
+
+    defn = AutopageDef(buttons=[Button(center="x")])
+    root = render_widget(defn, cols=3, rows=2, placeholder_path="F:host/ph.bin")
+    assert root.id == "autopage_root"
+    assert root.HasField("layout_grid")
+
+
+def test_render_widget_with_background_composites():
+    """background_path → absolute root holding [bg image, grid]."""
+    from autopage.touchy.render import page_pixels, render_widget
+
+    defn = AutopageDef(buttons=[Button(center="x")])
+    bg = "T:host/icache/abc.gif"
+    root = render_widget(defn, cols=3, rows=2, placeholder_path="F:host/ph.bin", background_path=bg)
+
+    assert root.id == "autopage_root"
+    assert root.HasField("layout_absolute")
+    children = root.layout_absolute.layout.children
+    assert len(children) == 2
+
+    image, grid = children
+    assert image.id == "autopage_bg"
+    assert image.image.path == bg
+    assert grid.id == "autopage_grid"
+    assert grid.HasField("layout_grid")
+
+    page_w, page_h = page_pixels(3, 2)
+    assert (root.rect.w, root.rect.h) == (page_w, page_h)
+    assert (image.rect.w, image.rect.h) == (page_w, page_h)

@@ -9,7 +9,7 @@ class = "code" # A regex that is matched against the window class (WM_CLASS)
 
 [background]
 # Defines an (optional) background for the page
-# FIXME figure out how to pass in backgrounds in the page JSON
+url = "https://www.geeksville.com/robots.png"
 
 [default]
 # Defaults values for buttons that don't specify them explicitly

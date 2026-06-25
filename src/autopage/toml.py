@@ -52,6 +52,7 @@ class AutopageDef:
     defaults: dict = field(default_factory=dict)
     buttons: list[Button] = field(default_factory=list)
     source_path: str | None = None
+    background_url: str | None = None  # [background] url = "..."
 
 
 # ── Parsing ──────────────────────────────────────────────────────────
@@ -90,6 +91,11 @@ def parse_toml_dict(doc: dict) -> AutopageDef:
     # Parse [default] table
     defaults = dict(doc.get("default", {}))
     result.defaults = defaults
+
+    # Parse [background] table (page-level; touchy backend only for now)
+    background = doc.get("background")
+    if background is not None:
+        result.background_url = background.get("url")
 
     # Parse [[button]] tables, applying defaults for missing fields
     button_fields = {f.name for f in Button.__dataclass_fields__.values()} - {"actions"}

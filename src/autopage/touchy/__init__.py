@@ -55,6 +55,7 @@ class TouchyApiClient(ApiClient):
     def __init__(self) -> None:
         self._pad = None
         self._placeholder_uploaded = False
+        self._image_cache = None
 
     # ── Connection management ────────────────────────────────────────
 
@@ -74,6 +75,7 @@ class TouchyApiClient(ApiClient):
             except Exception:  # noqa: BLE001 — best-effort cleanup at exit.
                 log.debug("Error closing touchy-pad device", exc_info=True)
             self._pad = None
+            self._image_cache = None
 
     def _ensure_placeholder(self, pad) -> None:
         if not self._placeholder_uploaded:
@@ -96,7 +98,50 @@ class TouchyApiClient(ApiClient):
     def render_page(self, definition: AutopageDef, *, decks: list[str] | None = None) -> Any:
         cols, rows = self._grid_dims()
         log.info("Rendering touchy page on a %dx%d grid", cols, rows)
-        return render_widget(definition, cols=cols, rows=rows, placeholder_path=PLACEHOLDER_PATH)
+        background_path = self._prepare_background(definition, cols, rows)
+        return render_widget(
+            definition,
+            cols=cols,
+            rows=rows,
+            placeholder_path=PLACEHOLDER_PATH,
+            background_path=background_path,
+        )
+
+    def _prepare_background(self, definition: AutopageDef, cols: int, rows: int) -> str | None:
+        """Fetch + cache the page background, returning its device path.
+
+        Returns ``None`` (and renders the bare grid) when no ``[background] url``
+        is set, no device is connected, or the fetch fails. The image is cached
+        on the device's transient ``T:`` drive, scaled aspect-preserving to the
+        page size; GIFs keep animating (``ImageCache`` passes them through).
+        """
+        url = definition.background_url
+        if not url:
+            return None
+
+        from autopage.touchy import background as _background
+        from autopage.touchy.render import page_pixels
+
+        try:
+            pad = self._ensure_pad()
+        except Exception as exc:  # noqa: BLE001 — no device → no background.
+            log.warning("No device for background image (%s); skipping", exc)
+            return None
+
+        raw = _background.fetch_background(url)
+        if raw is None:
+            return None
+
+        page_w, page_h = page_pixels(cols, rows)
+        try:
+            from touchy_pad.api import ImageCache
+
+            if self._image_cache is None:
+                self._image_cache = ImageCache(pad, max_dim=max(page_w, page_h))
+            return self._image_cache.set_cached_image(raw)
+        except Exception as exc:  # noqa: BLE001 — caching failure → no background.
+            log.warning("Failed to cache background %r: %s", url, exc)
+            return None
 
     def artifact_to_text(self, artifact: Any) -> str:
         return str(artifact)
