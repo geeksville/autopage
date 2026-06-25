@@ -41,8 +41,8 @@ dry-run:
     poetry run autopage --dry-run doc/example-shell.ap.toml
 
 run:
-    poetry run autopage
-    doc/example-shell.ap.toml
+    poetry run autopage 
+    # doc/example-shell.ap.toml
 
 # instead of pulling toml-repo from pypi, use the local submodule
 use-toml-repo-local:

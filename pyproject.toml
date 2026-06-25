@@ -5,7 +5,7 @@ description = "Automatic StreamController page definitions from TOML configs"
 readme = "README.md"
 license = "GPL-3.0-only"
 authors = [{ name = "Kevin Hester", email = "kevinh@geeksville.com" }]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4.0"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -20,7 +20,7 @@ keywords = ["streamdeck", "streamcontroller", "automation", "toml"]
 dependencies = [
     "tomlkit>=0.13",
     "dasbus (>=1.7,<2.0)",
-    "PyGObject>=3.42",
+    "PyGObject>=3.42,<3.52",
     "toml-repo >=0.1.4",
     "webcolors (>=25.10.0,<26.0.0)",
     "touchy-pad>=0.3",
@@ -51,7 +51,7 @@ ruff = ">=0.4"
 [tool.poetry.dependencies]
 # During development, resolve touchy-pad from the local submodule. Switch to the
 # published PyPI release by removing this override.
-touchy-pad = { path = "touchy-pad/app", develop = true, python = ">=3.12,<3.15" }
+touchy-pad = { path = "/workspaces/touchy-pad/app", develop = true, python = ">=3.12,<3.15" }
 
 [tool.ruff]
 line-length = 100
