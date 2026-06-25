@@ -320,3 +320,210 @@ def test_resolve_icons_api_failure_is_graceful():
 
     # Icon catalog fetch failed, so no icons are resolved and buttons keep their patterns
     assert defn.buttons[0].icon == "home"  # unchanged when catalog fetch fails
+
+
+# ── Foreground source (kdotool) ──────────────────────────────────────
+
+
+def _fake_completed(stdout="", returncode=0, stderr=""):
+    """Build a stand-in for subprocess.CompletedProcess."""
+    proc = MagicMock()
+    proc.stdout = stdout
+    proc.stderr = stderr
+    proc.returncode = returncode
+    return proc
+
+
+def test_kdotool_parses_active_window(monkeypatch):
+    """KdotoolSource maps the four output lines positionally (incl. pid)."""
+    from autopage import foreground
+
+    out = "{abc-123}\ncode\nSome Title\n4321\n"
+    captured = {}
+
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return _fake_completed(stdout=out)
+
+    monkeypatch.setattr(foreground.shutil, "which", lambda _: "/usr/bin/kdotool")
+    monkeypatch.setattr(foreground.subprocess, "run", fake_run)
+
+    win = foreground.KdotoolSource().get_active_window()
+    assert win == foreground.WindowInfo(
+        id="{abc-123}", window_class="code", name="Some Title", pid=4321
+    )
+    # pid query is part of the chained command.
+    assert "getwindowpid" in captured["cmd"]
+
+
+def test_kdotool_pid_optional(monkeypatch):
+    """A missing or non-integer pid line yields pid=None, not a crash."""
+    from autopage import foreground
+
+    monkeypatch.setattr(foreground.shutil, "which", lambda _: "/usr/bin/kdotool")
+
+    # Only three lines (no pid).
+    monkeypatch.setattr(
+        foreground.subprocess,
+        "run",
+        lambda *a, **k: _fake_completed(stdout="{id}\nfirefox\nTitle\n"),
+    )
+    win = foreground.KdotoolSource().get_active_window()
+    assert win is not None
+    assert win.pid is None
+
+    # Non-integer pid.
+    monkeypatch.setattr(
+        foreground.subprocess,
+        "run",
+        lambda *a, **k: _fake_completed(stdout="{id}\nfirefox\nTitle\nnope\n"),
+    )
+    assert foreground.KdotoolSource().get_active_window().pid is None
+
+
+def test_kdotool_none_on_failure(monkeypatch):
+    """Non-zero exit, timeout, and short output all map to None."""
+    import subprocess as _subprocess
+
+    from autopage import foreground
+
+    monkeypatch.setattr(foreground.shutil, "which", lambda _: "/usr/bin/kdotool")
+    src = foreground.KdotoolSource()
+
+    monkeypatch.setattr(foreground.subprocess, "run", lambda *a, **k: _fake_completed(returncode=1))
+    assert src.get_active_window() is None
+
+    def _raise_timeout(*a, **k):
+        raise _subprocess.TimeoutExpired(cmd="kdotool", timeout=5.0)
+
+    monkeypatch.setattr(foreground.subprocess, "run", _raise_timeout)
+    assert src.get_active_window() is None
+
+    monkeypatch.setattr(
+        foreground.subprocess, "run", lambda *a, **k: _fake_completed(stdout="{id}\n")
+    )
+    assert src.get_active_window() is None
+
+
+def test_kdotool_missing_binary(monkeypatch):
+    """Constructing the source without kdotool on PATH raises clearly."""
+    from autopage import foreground
+
+    monkeypatch.setattr(foreground.shutil, "which", lambda _: None)
+    try:
+        foreground.KdotoolSource()
+    except FileNotFoundError as exc:
+        assert "kdotool" in str(exc)
+    else:
+        raise AssertionError("expected FileNotFoundError")
+
+
+# ── TouchyApiClient.listen_foreground (poll → dispatch on change) ─────
+
+
+class _ScriptedSource:
+    """A ForegroundSource yielding a fixed sequence, then None forever."""
+
+    def __init__(self, windows):
+        self._windows = list(windows)
+
+    def get_active_window(self):
+        if self._windows:
+            return self._windows.pop(0)
+        return None
+
+
+def test_listen_foreground_edge_triggered(monkeypatch):
+    """Callback fires only when the (class, name) changes."""
+    from autopage import foreground
+    from autopage.touchy import TouchyApiClient
+
+    win_a = foreground.WindowInfo(id="1", window_class="code", name="A", pid=1)
+    win_a2 = foreground.WindowInfo(id="1", window_class="code", name="A", pid=1)
+    win_b = foreground.WindowInfo(id="2", window_class="firefox", name="B", pid=2)
+
+    source = _ScriptedSource([win_a, win_a2, win_b])
+    monkeypatch.setattr(foreground, "get_default_source", lambda: source)
+
+    # Drive the poll loop synchronously: each sleep advances, then stop.
+    calls = []
+    state = {"n": 0}
+
+    def fake_sleep(_):
+        state["n"] += 1
+        if state["n"] >= 4:
+            raise KeyboardInterrupt
+
+    import autopage.touchy as touchy_mod
+
+    monkeypatch.setattr(touchy_mod.time, "sleep", fake_sleep)
+
+    client = TouchyApiClient()
+    client.listen_foreground(lambda name, cls: calls.append((cls, name)))
+
+    # win_a fires once; win_a2 is identical (no fire); win_b fires once.
+    assert calls == [("code", "A"), ("firefox", "B")]
+
+
+# ── Engine: a match always activates the page ────────────────────────
+
+
+class _RecordingClient:
+    """A fake ApiClient capturing set_active_page calls."""
+
+    def __init__(self):
+        self.activations = []
+
+    def get_controllers(self):
+        return ["touchy-pad"]
+
+    def set_active_page(self, serial, name):
+        self.activations.append((serial, name))
+
+
+def _drive_listen(monkeypatch, *, windows, known_pages, force=False):
+    """Run listen_and_autoswitch against scripted windows, return the client."""
+    from autopage import api_client, engine
+    from autopage.toml import AutopageDef, MatchRule
+
+    page = engine._PreparedPage(
+        page_name="code",
+        definition=AutopageDef(matches=[MatchRule(class_pattern="code")]),
+        repo=MagicMock(url="file:///x/code.ap.toml"),
+    )
+    monkeypatch.setattr(engine, "_prepare_all_repos", lambda dev=False: [page])
+    monkeypatch.setattr(engine, "_fetch_known_pages", lambda: set(known_pages))
+
+    client = _RecordingClient()
+
+    def fake_listen(callback):
+        for win in windows:
+            callback(win.name, win.window_class)
+
+    client.listen_foreground = fake_listen
+    monkeypatch.setattr(api_client, "get_client", lambda: client)
+
+    engine.listen_and_autoswitch(force=force)
+    return client
+
+
+def test_engine_activates_known_page(monkeypatch):
+    """A match whose page is already on the device still activates it."""
+    from autopage.foreground import WindowInfo
+
+    win = WindowInfo(id="1", window_class="code", name="VS Code", pid=1)
+    client = _drive_listen(monkeypatch, windows=[win], known_pages={"code"})
+
+    assert client.activations == [("touchy-pad", "code")]
+
+
+def test_engine_skips_redundant_activation(monkeypatch):
+    """The same active page isn't re-activated on a title-only change."""
+    from autopage.foreground import WindowInfo
+
+    win1 = WindowInfo(id="1", window_class="code", name="VS Code - a", pid=1)
+    win2 = WindowInfo(id="1", window_class="code", name="VS Code - b", pid=1)
+    client = _drive_listen(monkeypatch, windows=[win1, win2], known_pages={"code"})
+
+    # Activated once for win1; win2 maps to the same page → no re-activation.
+    assert client.activations == [("touchy-pad", "code")]

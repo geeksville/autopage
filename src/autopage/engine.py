@@ -405,13 +405,15 @@ def _activate_page_on_all_controllers(page_name: str) -> None:
 
 
 def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
-    """Listen for ForegroundWindow changes and auto-switch pages.
+    """Listen for foreground-window changes and auto-switch pages.
 
     1. Discover and pre-parse all ap.toml files (like process_all_repos).
-    2. Start listening for DBus property changes on the StreamController service.
-    3. When ForegroundWindow changes, check all match rules.
-    4. For each matching page, push it (respecting --force) and set it active
-       on all controllers.
+    2. Start listening for foreground-window changes via the active backend's
+       ``listen_foreground`` (touchy-pad polls ``kdotool``; StreamController
+       receives a DBus signal).
+    3. When the focused window changes, check all match rules.
+    4. Ensure each matching page exists on the device (push respecting
+       --force), then switch the device to the matching page.
     """
     from autopage.api_client import get_client
 
@@ -431,7 +433,13 @@ def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
         len(known_pages),
     )
 
+    # Track the page we last switched the device to, so a window change that
+    # still maps to the already-active page doesn't re-send the activation
+    # (e.g. a title-only change within the same app).
+    active_page: str | None = None
+
     def on_window_changed(window_name, window_class):
+        nonlocal active_page
         log.info("Window changed: name=%r class=%r", window_name, window_class)
 
         matched = _match_window(prepared_pages, window_name, window_class)
@@ -440,30 +448,33 @@ def listen_and_autoswitch(*, dev: bool = False, force: bool = False) -> None:
             log.debug("No matching pages for current window")
             return
 
+        # The first matching page wins as the one to switch to; ensure every
+        # matched page exists on the device so a later switch is instant.
+        switch_to: str | None = None
         for entry in matched:
             try:
                 page_name = _page_name_from_url(entry.repo.url)
-                if not force and page_name in known_pages:
-                    log.debug(
-                        "Page %r already on controller, skipping rebuild",
-                        page_name,
-                    )
-                else:
-                    # create a new page and switch to it
+                # Ensure the page is present: (re)build + push only when it's
+                # not already on the device, or --force was given.
+                if force or page_name not in known_pages:
                     page_name, artifact = repo_to_jsonpage(entry.repo)
-                    pushed = push_jsonpage(
-                        page_name, artifact, force=force, known_pages=known_pages
-                    )
-                    if pushed:
-                        _activate_page_on_all_controllers(page_name)
-                        log.info("Switched to page %r", page_name)
-                    else:
-                        log.debug(
-                            "Page %r already on controller, skipping activation",
-                            page_name,
-                        )
+                    push_jsonpage(page_name, artifact, force=force, known_pages=known_pages)
+                else:
+                    log.debug("Page %r already on controller, skipping rebuild", page_name)
+                if switch_to is None:
+                    switch_to = page_name
             except Exception as exc:
-                log.error("Error pushing page %r: %s", entry.page_name, exc)
+                log.error("Error preparing page %r: %s", entry.page_name, exc)
+
+        # Always switch to the matching page (unless it's already showing).
+        if switch_to is None:
+            return
+        if switch_to == active_page:
+            log.debug("Page %r already active, not re-switching", switch_to)
+            return
+        _activate_page_on_all_controllers(switch_to)
+        active_page = switch_to
+        log.info("Switched to page %r", switch_to)
 
     client = get_client()
     client.listen_foreground(on_window_changed)

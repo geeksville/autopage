@@ -2,6 +2,13 @@
 
 ## Near term todo
 
+* !get kdotool working
+* put the uscrs in a special directory so next/prev doesn't select them
+* if there is no match when doing --listen, switch to the default uscr
+* support wildcard matching for icon names by looking at icon_dir like in https://github.com/stylesuxx/python-material-icons/blob/master/examples/pygame-gallery.py
+
+## Old todo
+
 * ask devs about https://github.com/geeksville/StreamController/tree/exp-old-dbus-api
 * ask devs about adding api for installing icon packs and plugins
 * ask about flatpak being large

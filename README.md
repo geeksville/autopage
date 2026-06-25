@@ -25,6 +25,8 @@ Here's a short [video](https://youtu.be/nWYgs0SE4BA) demonstrating usage.
 
 * "autopage" - This will install known autopage definitions onto your StreamController (try this first).
 * "autopage --listen" - This will run in the background and only create pages if it sees you use a supported app. (Until there are lots of pages you probably don't need to bother with this)
+
+  On the touchy-pad backend, foreground-window detection uses [`kdotool`](https://github.com/jinliu/kdotool) (KDE/KWin). Install it (Fedora: `dnf install kdotool`) and run from a session with a reachable session bus.
 * "autopage somepath/foo.ap.toml" - Uses just a single ap.toml file (for testing/using your own new app definitions).
 
 # A note to StreamController developers

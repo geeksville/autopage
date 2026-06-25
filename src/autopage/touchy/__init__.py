@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import atexit
 import logging
+import time
 from typing import Any
 
 from autopage.api_client import ApiClient
@@ -16,6 +17,9 @@ from autopage.toml import AutopageDef
 from autopage.touchy.render import DEFAULT_COLS, DEFAULT_ROWS, auto_grid, render_widget
 
 log = logging.getLogger(__name__)
+
+# How often to poll the foreground-window source in listen mode.
+POLL_INTERVAL_S = 1.0
 
 # Shared placeholder icon path. Uploaded once per connection to the volatile
 # PSRAM ramdisk and referenced by every button until real icon selection lands.
@@ -138,6 +142,43 @@ class TouchyApiClient(ApiClient):
     def set_active_page(self, serial: str, name: str) -> None:
         pad = self._ensure_pad()
         pad.show_user_screen(name)
+
+    # ── Foreground-window listener ───────────────────────────────────
+
+    def listen_foreground(self, callback) -> None:
+        """Poll the foreground window and dispatch changes to ``callback``.
+
+        Unlike the StreamController backend (which receives a DBus signal),
+        touchy-pad has no window source of its own, so we poll an OS-neutral
+        :class:`~autopage.foreground.ForegroundSource` (``kdotool`` on KDE)
+        once per :data:`POLL_INTERVAL_S`. ``callback(window_name,
+        window_class)`` fires only when the focused window changes
+        (edge-triggered), matching the SC backend's contract. Blocks until
+        ``KeyboardInterrupt``.
+        """
+        from autopage.foreground import get_default_source
+
+        source = get_default_source()
+        log.info(
+            "Polling foreground window every %.1fs (Ctrl+C to stop)…",
+            POLL_INTERVAL_S,
+        )
+
+        last_key: tuple[str, str] | None = None
+        try:
+            while True:
+                win = source.get_active_window()
+                if win is not None:
+                    key = (win.window_class, win.name)
+                    if key != last_key:
+                        last_key = key
+                        try:
+                            callback(win.name, win.window_class)
+                        except Exception:  # noqa: BLE001 — keep listening.
+                            log.exception("foreground callback raised")
+                time.sleep(POLL_INTERVAL_S)
+        except KeyboardInterrupt:
+            log.info("Stopped foreground polling.")
 
 
 __all__ = ["TouchyApiClient", "PLACEHOLDER_PATH"]
