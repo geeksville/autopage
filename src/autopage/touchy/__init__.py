@@ -116,9 +116,20 @@ class TouchyApiClient(ApiClient):
         return True
 
     def get_controllers(self) -> list[str]:
-        from touchy_pad.api import touchy_get_pad_ids
-
-        return list(touchy_get_pad_ids())
+        # Reuse the single shared device handle rather than re-enumerating via
+        # libusb. A separate usb.core enumeration (touchy_get_pad_ids) opens its
+        # own device handle to read the serial string, which on some hosts (e.g.
+        # dev containers, where the device is only reachable through the
+        # /host/dev/bus/usb fallback) corrupts libusb's device state so the
+        # subsequent real touchy_open() fails with DeviceNotFound. We don't need
+        # the serial for anything — render_page ignores the controller list — so
+        # just report whether a device opened.
+        try:
+            self._ensure_pad()
+        except Exception as exc:  # noqa: BLE001 — no device attached.
+            log.warning("No touchy-pad device found: %s", exc)
+            return []
+        return ["touchy-pad"]
 
     def get_pages(self) -> list[str]:
         # Stage 1 always (re)uploads; we don't enumerate on-device user screens.
