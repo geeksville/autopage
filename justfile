@@ -52,6 +52,14 @@ use-toml-repo-pypi:
     poetry remove toml-repo
     poetry add toml-repo
 
+# instead of pulling touchy-pad from pypi, use the local submodule
+use-touchy-local:
+    poetry add --editable /workspaces/touchy-pad/app
+
+use-touchy-pypi:
+    poetry remove touchy-pad
+    poetry add touchy-pad
+
 # Clean build artifacts
 clean:
     rm -rf dist/ build/ *.egg-info
