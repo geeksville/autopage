@@ -147,10 +147,11 @@ def render_widget(
             if png is not None:
                 asset = png
 
-        btn_style = None
+        bg_color = None
         if button.background:
             opacity = button.opacity if button.opacity is not None else DEFAULT_OPACITY
-            btn_style = s.style(bg_color=parse_color_int(button.background, opacity))
+            bg_color = parse_color_int(button.background, opacity)
+        btn_style = s.style(bg_color=bg_color, shadow_width=0, border_w=0)
 
         btn = s.image_button(
             id=f"ap_btn_{i}",
