@@ -24,6 +24,7 @@ dependencies = [
     "toml-repo >=0.1.4",
     "webcolors (>=25.10.0,<26.0.0)",
     "touchy-pad>=0.3",
+    "python-material-icons (>=0.3.2,<0.4.0)",
 ]
 
 [project.urls]

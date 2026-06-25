@@ -10,8 +10,8 @@ StreamDeck grid, each cell carries the autopage button's actions:
   ``host_action`` running a host-side stub that logs the request — a hook to
   flesh out later.
 
-Every button uses one shared placeholder icon for now; automatic Material
-Design icon selection comes in a later stage.
+Buttons with an ``icon`` get a Material Design icon image (rendered by
+:mod:`autopage.touchy.icons`); the rest fall back to the shared placeholder.
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ import logging
 
 from autopage.keys_hid import type_string_to_macro_steps
 from autopage.toml import AutopageDef, Button
+from autopage.touchy.icons import render_icon
 
 log = logging.getLogger(__name__)
 
@@ -139,9 +140,14 @@ def render_widget(
 
     children = []
     for i, (button, (col, row)) in enumerate(placements):
+        asset = placeholder_path
+        if button.icon:
+            png = render_icon(button.icon, size=KEY_PIXELS)
+            if png is not None:
+                asset = png
         btn = s.image_button(
             id=f"ap_btn_{i}",
-            asset=placeholder_path,
+            asset=asset,
             on_click=_button_actions(button),
         )
         children.append(s.cell(btn, col=col, row=row, grow_x=1, grow_y=1))

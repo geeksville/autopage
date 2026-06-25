@@ -88,3 +88,61 @@ have a hook to flesh out later.
 
 Add a `touchy-pad` dependency, pointed at the local `touchy-pad/app` path during
 development (the git submodule), switching to the PyPI release later.
+
+## Stage 2: use material design icons in our Touchy-pad version
+
+Instead of the placeholder icon use the
+[python-material-icons](https://pypi.org/project/python-material-icons/) library
+to generate icon images and apply those images to our image buttons.
+
+### Background
+
+`python-material-icons` (imported as `material_icons`) exposes a single
+`MaterialIcons` class whose `get()` method renders an icon name to PNG bytes:
+
+```python
+from material_icons import MaterialIcons, IconStyle
+icons = MaterialIcons()
+png_bytes = icons.get("content_copy", size=72, color="#ffffff",
+                      style=IconStyle.OUTLINED)
+```
+
+It caches on `(name, size, color, style)`, and raises `FileNotFoundError` for
+unknown icon names. The autopage `Button.icon` field already carries Material
+Design icon names verbatim (`content_copy`, `home`, `arrow_back`, …), so no name
+translation is needed.
+
+The touchy `image_button(asset=...)` accepts a path string, raw image `bytes`,
+or a `PIL.Image` (via `coerce_image_source`). Passing PNG `bytes` directly is
+the simplest path: the bytes are wrapped in a single-use `ImageSource` and
+uploaded to the device automatically when `user_screen_save` binds the widget.
+That means dry-run rendering works with no device attached.
+
+### Approach
+
+1. **New module `src/autopage/touchy/icons.py`** — a thin wrapper around
+   `MaterialIcons`:
+   * a lazily-created module-level `MaterialIcons` singleton;
+   * `render_icon(name, *, size=KEY_PIXELS, color=DEFAULT_ICON_COLOR, style=DEFAULT_ICON_STYLE) -> bytes | None`
+     that returns PNG bytes, normalising the name (lower-case, spaces/hyphens to
+     underscores) and returning `None` (with a warning) when the icon is unknown
+     or the library is missing, so callers can fall back to the placeholder;
+   * module constants `DEFAULT_ICON_COLOR = "#ffffff"` and
+     `DEFAULT_ICON_STYLE = IconStyle.OUTLINED` (white outlined icons read well on
+     the coloured button backgrounds).
+
+2. **`src/autopage/touchy/render.py`** — in `render_widget`, for each placed
+   button choose the `image_button` asset:
+   * if `button.icon` is set, call `render_icon(button.icon)`; on success pass
+     the PNG `bytes` as the asset, otherwise fall back to `placeholder_path`;
+   * buttons with no `icon` keep using `placeholder_path`.
+
+   The `button.size` hint is still ignored for now (icons render at the native
+   key size); it can scale the rendered icon later.
+
+3. Keep the placeholder upload in `TouchyApiClient.push_page` as the fallback
+   asset for icon-less / unresolved buttons.
+
+No changes are needed in the StreamController backend (it resolves icons via its
+own DBus icon catalog), nor in `engine.resolve_icons` (touchy renders icons at
+draw time rather than pre-resolving them).
