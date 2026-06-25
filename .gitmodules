@@ -4,3 +4,6 @@
 [submodule "autopage-recipes"]
 	path = autopage-recipes
 	url = https://github.com/geeksville/autopage-recipes.git
+[submodule "touchy-pad"]
+	path = touchy-pad
+	url = https://github.com/geeksville/touchy-pad.git
