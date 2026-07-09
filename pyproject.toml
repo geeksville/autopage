@@ -24,7 +24,7 @@ dependencies = [
     "toml-repo >=0.1.4",
     "webcolors (>=25.10.0,<26.0.0)",
     "python-material-icons (>=0.3.2,<0.4.0)",
-    "touchy-pad (>=0.3.3,<0.4.0)",
+    "touchy-pad @ file:///workspaces/touchy-pad/app",
 ]
 
 [project.urls]
@@ -51,6 +51,7 @@ ruff = ">=0.4"
 [tool.poetry.dependencies]
 # During development, resolve touchy-pad from the local submodule. Switch to the
 # published PyPI release by removing this override.
+touchy-pad = {develop = true}
 
 [tool.ruff]
 line-length = 100

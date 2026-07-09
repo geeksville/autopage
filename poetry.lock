@@ -1604,12 +1604,10 @@ name = "touchy-pad"
 version = "0.3.3"
 description = "Host library and CLI for the Touchy-Pad USB multitouch device."
 optional = false
-python-versions = "<3.15,>=3.11"
+python-versions = ">=3.11,<3.15"
 groups = ["main"]
-files = [
-    {file = "touchy_pad-0.3.3-py3-none-any.whl", hash = "sha256:b339ae420baa295a3614058f8cfa612a719811e31238a49b043e1f0791cc8efa"},
-    {file = "touchy_pad-0.3.3.tar.gz", hash = "sha256:a18939e24e49a65f1474c26825a4e5e51caf951a7eb81fe0cd77bb70dc494c2e"},
-]
+files = []
+develop = true
 
 [package.dependencies]
 click = ">=8.1,<9"
@@ -1624,6 +1622,10 @@ streamcontroller-streamdeck = ">=0.1.5,<1"
 
 [package.extras]
 sim = ["PySide6 (>=6.6,<7)", "platformdirs (>=4)"]
+
+[package.source]
+type = "directory"
+url = "../../app"
 
 [[package]]
 name = "typing-extensions"
@@ -1700,4 +1702,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.15"
-content-hash = "3d78546b8aba9d27bb3d5e7337f121fcc1571f91314c1e094b2ba0c970c7e304"
+content-hash = "b9d66906d118935aaa2ce93924b010740c9d68d228d26826456252ce12102c7c"
